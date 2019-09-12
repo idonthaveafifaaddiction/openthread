@@ -79,6 +79,7 @@ COMMONCPPFLAGS                                                                  
     -I$(EFR32MG_SDK_SRCDIR)/platform/emdrv/uartdrv/inc                                          \
     -I$(EFR32MG_SDK_SRCDIR)/platform/emdrv/uartdrv/config                                       \
     -I$(EFR32MG_SDK_SRCDIR)/platform/emdrv/ustimer/inc                                          \
+    -I$(EFR32MG_SDK_SRCDIR)/platform/emdrv/sleep/inc                                            \
     -I$(EFR32MG_SDK_SRCDIR)/platform/emdrv/dmadrv/inc                                           \
     -I$(EFR32MG_SDK_SRCDIR)/platform/emdrv/dmadrv/config                                        \
     -I$(EFR32MG_SDK_SRCDIR)/platform/emdrv/rtcdrv/inc                                           \
@@ -110,6 +111,7 @@ SILABS_COMMON_SOURCES                                                           
     gecko_sdk_suite/v2.6/platform/emdrv/rtcdrv/src/rtcdriver.c                                  \
     gecko_sdk_suite/v2.6/platform/emdrv/uartdrv/src/uartdrv.c                                   \
     gecko_sdk_suite/v2.6/platform/emdrv/ustimer/src/ustimer.c                                   \
+    gecko_sdk_suite/v2.6/platform/emdrv/sleep/src/sleep.c                                       \
     gecko_sdk_suite/v2.6/platform/emlib/src/em_adc.c                                            \
     gecko_sdk_suite/v2.6/platform/emlib/src/em_cmu.c                                            \
     gecko_sdk_suite/v2.6/platform/emlib/src/em_core.c                                           \
@@ -126,8 +128,10 @@ SILABS_COMMON_SOURCES                                                           
     gecko_sdk_suite/v2.6/platform/emlib/src/em_usart.c                                          \
     gecko_sdk_suite/v2.6/platform/radio/rail_lib/hal/efr32/hal_efr.c                            \
     gecko_sdk_suite/v2.6/platform/radio/rail_lib/hal/hal_common.c                               \
-    gecko_sdk_suite/v2.6/util/third_party/mbedtls/library/ecp.c                                 \
+    ../mbedtls/repo/library/ecp.c                                 								\
+    ../mbedtls/repo/library/ecdh.c                                 								\
     gecko_sdk_suite/v2.6/util/third_party/mbedtls/sl_crypto/src/crypto_aes.c                    \
+    gecko_sdk_suite/v2.6/util/third_party/mbedtls/sl_crypto/src/crypto_ble.c                    \
     gecko_sdk_suite/v2.6/util/third_party/mbedtls/sl_crypto/src/crypto_ecp.c                    \
     gecko_sdk_suite/v2.6/util/third_party/mbedtls/sl_crypto/src/crypto_management.c             \
     $(NULL)
