@@ -138,6 +138,7 @@ SILABS_COMMON_SOURCES                                                           
 
 SILABS_EFR32MG12_SOURCES                                                                      = \
     gecko_sdk_suite/v2.6/platform/Device/SiliconLabs/EFR32MG12P/Source/system_efr32mg12p.c      \
+    gecko_sdk_suite/v2.6/util/third_party/mbedtls/sl_crypto/src/trng.c      					\
     gecko_sdk_suite/v2.6/platform/Device/SiliconLabs/EFR32MG12P/Source/GCC/startup_efr32mg12p.c \
     $(NULL)
 
