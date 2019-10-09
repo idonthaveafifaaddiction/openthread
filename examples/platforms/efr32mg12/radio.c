@@ -553,7 +553,6 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         sCurrentBandConfig = config;
     }
 
-    otEXPECT(aFrame->mLength >= IEEE802154_MIN_LENGTH && aFrame->mLength <= IEEE802154_MAX_LENGTH);
     frameLength = (uint8_t)aFrame->mLength;
     RAIL_WriteTxFifo(gRailHandle, &frameLength, sizeof frameLength, true);
     RAIL_WriteTxFifo(gRailHandle, aFrame->mPsdu, frameLength - 2, false);
@@ -707,12 +706,6 @@ static void processNextRxPacket(otInstance *aInstance)
 
     length = packetInfo.packetBytes + 1;
 
-    // check the length in recv packet info structure
-    otEXPECT(length == packetInfo.firstPortionData[0]);
-
-    // check the length validity of recv packet
-    otEXPECT(length >= IEEE802154_MIN_LENGTH && length <= IEEE802154_MAX_LENGTH);
-
     otLogInfoPlat("Received data:%d", length);
 
     // skip length byte
@@ -852,6 +845,10 @@ static void RAILCb_Generic(RAIL_Handle_t aRailHandle, RAIL_Events_t aEvents)
                 RAIL_YieldRadio(aRailHandle);
                 sTransmitError = OT_ERROR_NONE;
                 sTransmitBusy  = false;
+            } else {
+#if RADIO_CONFIG_DEBUG_COUNTERS_SUPPORT
+            sRailDebugCounters.mRailEventPacketSentAckReq++;
+#endif                
             }
 #if RADIO_CONFIG_DEBUG_COUNTERS_SUPPORT
             sRailDebugCounters.mRailEventPacketSent++;
@@ -930,9 +927,14 @@ static void RAILCb_Generic(RAIL_Handle_t aRailHandle, RAIL_Events_t aEvents)
     if (aEvents & RAIL_EVENT_SCHEDULER_STATUS)
     {
         RAIL_SchedulerStatus_t status = RAIL_GetSchedulerStatus(aRailHandle);
+        
+        assert(status != RAIL_SCHEDULER_STATUS_INTERNAL_ERROR);
 
-        if (status == RAIL_SCHEDULER_STATUS_SINGLE_TX_FAIL || status == RAIL_SCHEDULER_STATUS_SCHEDULED_TX_FAIL ||
-            (status == RAIL_SCHEDULER_STATUS_SCHEDULE_FAIL && sTransmitBusy))
+        if (status == RAIL_SCHEDULER_STATUS_CCA_CSMA_TX_FAIL ||
+            status == RAIL_SCHEDULER_STATUS_SINGLE_TX_FAIL ||
+            status == RAIL_SCHEDULER_STATUS_SCHEDULED_TX_FAIL ||
+            (status == RAIL_SCHEDULER_STATUS_SCHEDULE_FAIL && sTransmitBusy) ||
+            (status == RAIL_SCHEDULER_STATUS_EVENT_INTERRUPTED && sTransmitBusy))
         {
             sTransmitError = OT_ERROR_ABORT;
             sTransmitBusy  = false;
@@ -940,6 +942,17 @@ static void RAILCb_Generic(RAIL_Handle_t aRailHandle, RAIL_Events_t aEvents)
             sRailDebugCounters.mRailEventSchedulerStatusError++;
 #endif
         }
+        else if (status == RAIL_SCHEDULER_STATUS_AVERAGE_RSSI_FAIL)
+        {
+          // TODO: check erro of sEnergyScanStatus
+        }
+#if RADIO_CONFIG_DEBUG_COUNTERS_SUPPORT
+        else if (sTransmitBusy)
+        {
+          sRailDebugCounters.mRailEventsSchedulerStatusLastStatus = status;
+          sRailDebugCounters.mRailEventsSchedulerStatusTransmitBusy++;
+        }
+#endif
     }
 
     otSysEventSignalPending();
