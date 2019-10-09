@@ -944,13 +944,14 @@ static void RAILCb_Generic(RAIL_Handle_t aRailHandle, RAIL_Events_t aEvents)
         }
         else if (status == RAIL_SCHEDULER_STATUS_AVERAGE_RSSI_FAIL)
         {
-          // TODO: check erro of sEnergyScanStatus
+            sEnergyScanStatus = ENERGY_SCAN_STATUS_COMPLETED;
+            sEnergyScanResultDbm = OT_RADIO_RSSI_INVALID;
         }
 #if RADIO_CONFIG_DEBUG_COUNTERS_SUPPORT
         else if (sTransmitBusy)
         {
-          sRailDebugCounters.mRailEventsSchedulerStatusLastStatus = status;
-          sRailDebugCounters.mRailEventsSchedulerStatusTransmitBusy++;
+            sRailDebugCounters.mRailEventsSchedulerStatusLastStatus = status;
+            sRailDebugCounters.mRailEventsSchedulerStatusTransmitBusy++;
         }
 #endif
     }
