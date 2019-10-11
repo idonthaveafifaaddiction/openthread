@@ -698,8 +698,7 @@ static void processNextRxPacket(otInstance *aInstance)
     uint16_t               length;
 
     packetHandle = RAIL_GetRxPacketInfo(gRailHandle, RAIL_RX_PACKET_HANDLE_OLDEST, &packetInfo);
-    otEXPECT_ACTION(packetInfo.packetStatus == RAIL_RX_PACKET_READY_SUCCESS,
-                    packetHandle = RAIL_RX_PACKET_HANDLE_INVALID);
+    otEXPECT(packetHandle != RAIL_RX_PACKET_HANDLE_INVALID && packetInfo.packetStatus == RAIL_RX_PACKET_READY_SUCCESS);
 
     status = RAIL_GetRxPacketDetailsAlt(gRailHandle, packetHandle, &packetDetails);
     otEXPECT(status == RAIL_STATUS_NO_ERROR);
