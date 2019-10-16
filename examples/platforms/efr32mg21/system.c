@@ -34,18 +34,50 @@
 
 #include <string.h>
 
+#include "openthread-system.h"
 #include <openthread/platform/uart.h>
 
 #include "common/logging.hpp"
 
 #include "bsp.h"
 #include "em_chip.h"
+#include "em_core.h"
+#include "em_emu.h"
+#include "em_system.h"
+#include "hal-config.h"
 #include "hal_common.h"
+#include "rail.h"
+#include "rtcdriver.h"
 
 #include "openthread-core-efr32-config.h"
 #include "platform-efr32.h"
 
-#include "hal-config.h"
+
+
+
+
+
+
+//#include "stack/include/ember.h"
+//#include "include/error.h"
+//#include "hal/hal.h"
+//#include "serial/serial.h"
+//#include "cstartup-common.h"
+//#include "coexistence/protocol/ieee802154/coexistence-802154.h"
+
+
+//  #include "rtos/rtos.h"
+
+
+//#include <interrupts-efm32.h>
+
+
+
+
+
+
+
+
 
 #if (HAL_FEM_ENABLE)
 #include "fem-control.h"
@@ -64,16 +96,41 @@ void otSysInit(int argc, char *argv[])
     OT_UNUSED_VARIABLE(argc);
     OT_UNUSED_VARIABLE(argv);
 
+    __disable_irq();
+    
+      // Configure BASEPRI to be at the interrupts disabled level so that when we
+  // turn interrupts back on nothing fires immediately.
+//  INTERRUPTS_OFF();
+
+  CORE_ATOMIC_IRQ_DISABLE();
+
+  // Bootloader might be at the base of flash, or even in the NULL_BTL case,
+  // the BAT/AAT will be at the beginning of the image.
+  // Setting the vectorTable is required.
+//  SCB->VTOR =  (uint32_t)halAppAddressTable.baseTable.vectorTable;
+
+
+#undef FIXED_EXCEPTION
+#define FIXED_EXCEPTION(vectorNumber, functionName, deviceIrqn, deviceIrqHandler)
+#define EXCEPTION(vectorNumber, functionName, deviceIrqn, deviceIrqHandler, priorityLevel, subpriority) \
+    NVIC_SetPriority(deviceIrqn, NVIC_EncodePriority(PRIGROUP_POSITION, priorityLevel, subpriority));
+#include NVIC_CONFIG
+#undef EXCEPTION
+
+    NVIC_SetPriorityGrouping(PRIGROUP_POSITION);
     CHIP_Init();
-
     halInitChipSpecific();
-
     BSP_Init(BSP_INIT_BCC);
+    RTCDRV_Init();
 
 #if (HAL_FEM_ENABLE)
     initFem();
     wakeupFem();
 #endif
+
+    __enable_irq();
+
+    CORE_ATOMIC_IRQ_ENABLE();
 
 #if USE_EFR32_LOG
     efr32LogInit();
@@ -106,4 +163,9 @@ void otSysProcessDrivers(otInstance *aInstance)
     efr32UartProcess();
     efr32RadioProcess(aInstance);
     efr32AlarmProcess(aInstance);
+}
+
+__WEAK void otSysEventSignalPending(void)
+{
+    // Intentionally empty
 }

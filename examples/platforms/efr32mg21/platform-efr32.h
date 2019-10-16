@@ -41,9 +41,13 @@
 #include "em_system.h"
 
 #include "core_cm33.h"
+#include "rail.h"
 
 // Global OpenThread instance structure
 extern otInstance *sInstance;
+
+// Global reference to rail handle
+extern RAIL_Handle_t gRailHandle;
 
 /**
  * This function initializes the alarm service used by OpenThread.

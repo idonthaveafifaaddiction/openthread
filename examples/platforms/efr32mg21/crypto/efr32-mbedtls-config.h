@@ -32,6 +32,14 @@
 #include "em_device.h"
 #include "em_se.h"
 
+#define MBEDTLS_AES_C
+#define MBEDTLS_ECP_C
+#define MBEDTLS_ECDH_C
+#define MBEDTLS_CIPHER_MODE_CTR
+#define MBEDTLS_TRNG_C
+
+#define MBEDTLS_ENTROPY_HARDWARE_ALT
+#define MBEDTLS_ENTROPY_C
 /**
  * \def MBEDTLS_AES_ALT
  *
