@@ -52,12 +52,6 @@
 #include "openthread-core-efr32-config.h"
 #include "platform-efr32.h"
 
-
-
-
-
-
-
 //#include "stack/include/ember.h"
 //#include "include/error.h"
 //#include "hal/hal.h"
@@ -65,19 +59,9 @@
 //#include "cstartup-common.h"
 //#include "coexistence/protocol/ieee802154/coexistence-802154.h"
 
-
 //  #include "rtos/rtos.h"
 
-
 //#include <interrupts-efm32.h>
-
-
-
-
-
-
-
-
 
 #if (HAL_FEM_ENABLE)
 #include "fem-control.h"
@@ -97,18 +81,17 @@ void otSysInit(int argc, char *argv[])
     OT_UNUSED_VARIABLE(argv);
 
     __disable_irq();
-    
-      // Configure BASEPRI to be at the interrupts disabled level so that when we
-  // turn interrupts back on nothing fires immediately.
-//  INTERRUPTS_OFF();
 
-  CORE_ATOMIC_IRQ_DISABLE();
+    // Configure BASEPRI to be at the interrupts disabled level so that when we
+    // turn interrupts back on nothing fires immediately.
+    //  INTERRUPTS_OFF();
 
-  // Bootloader might be at the base of flash, or even in the NULL_BTL case,
-  // the BAT/AAT will be at the beginning of the image.
-  // Setting the vectorTable is required.
-//  SCB->VTOR =  (uint32_t)halAppAddressTable.baseTable.vectorTable;
+    CORE_ATOMIC_IRQ_DISABLE();
 
+    // Bootloader might be at the base of flash, or even in the NULL_BTL case,
+    // the BAT/AAT will be at the beginning of the image.
+    // Setting the vectorTable is required.
+    //  SCB->VTOR =  (uint32_t)halAppAddressTable.baseTable.vectorTable;
 
 #undef FIXED_EXCEPTION
 #define FIXED_EXCEPTION(vectorNumber, functionName, deviceIrqn, deviceIrqHandler)
