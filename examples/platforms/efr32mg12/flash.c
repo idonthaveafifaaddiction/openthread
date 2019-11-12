@@ -43,7 +43,6 @@
 // Implement OT third party interface using Silabs NVM3.
 
 #include <openthread/platform/settings.h>
-#include <string.h>
 
 #include "nvm3.h"
 #include "nvm3_hal_flash.h"
@@ -169,20 +168,18 @@ otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint
                 {
                     valueLength = objLen;
 
-                    // Only perform read if an input buffer was passed in.
-                    if ((aValue != NULL) && (aValueLength != NULL) && (valueLength > 0))
+                    // Perform read only if an input buffer and buffer length was passed in.
+                    if ((aValue != NULL) && (aValueLength != NULL) && (*aValueLength > 0))
                     {
-                        // Read nvm3 obj bytes into a tmp buffer.
-                        uint8_t *buf = NULL;
-                        buf = malloc(valueLength);
-                        err = mapNvm3Error(nvm3_readData(&handle, nvm3Key, buf, valueLength));
-                        if (err == OT_ERROR_NONE)
+                        // Check buffer is large enough for all the nvm3 object data-
+                        // NOTE: nvm3_readData returns an error if the buffer is not long enough for
+                        // ALL of the obj bytes to be read in one go- this differs from the orig
+                        // OT nv implementation which reads nv bytes up to the size of the buffer).
+                        if (*aValueLength >= valueLength)
                         {
-                            // Copy the required number of bytes to the output buffer.
-                            memcpy(aValue, buf, (valueLength > *aValueLength) ? *aValueLength : valueLength);
+                            err = mapNvm3Error(nvm3_readData(&handle, nvm3Key, aValue, valueLength));
+                            SuccessOrExit(err);
                         }
-                        free(buf);
-                        SuccessOrExit(err);
                     }   
                 }
                 idxFound = true;
