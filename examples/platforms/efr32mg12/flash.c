@@ -43,6 +43,7 @@
 // Implement OT third party interface using Silabs NVM3.
 
 #include <openthread/platform/settings.h>
+#include <string.h>
 
 #include "nvm3.h"
 #include "nvm3_hal_flash.h"
@@ -73,17 +74,17 @@
     &nvm3_halFlashHandle,                                \
   }
 
-#define OT_NVM3_MAX_NUM_OBJECTS                   256  //TODO- Max limit ?  In theory could be = 6 (key types) * 256 (indexes)) + however many objs for User nvm3 objs.
+#define NUM_SETTINGS_OBJECTS                  7   // The number of enumerated Settings key types (in settingsd.hpp).
+#define NUM_INDEXED_SETTINGS                  OPENTHREAD_CONFIG_MLE_MAX_CHILDREN   // Indexed key types are only supported for kKeyChildInfo (=='child table').
+#define NUM_USER_OBJECTS                      16  // User nvm3 objects (nvm3 key range 0x0000 -> 0xDFFF is available for user data)
 
-#define OT_DEVICE_CONFIG_NVM3_MAX_OBJECT_SIZE     512  //TODO-  Does OT nvram need long data strings longer than this??
+#define OT_NVM3_MAX_NUM_OBJECTS               NUM_SETTINGS_OBJECTS + NUM_INDEXED_SETTINGS + NUM_USER_OBJECTS
+#define OT_NVM3_MAX_OBJECT_SIZE               256
+#define OT_NVM3_REPACK_HEADROOM               64   // Threshold for User non-forced nvm3 flash repacking.  //TODO- Set repck to run when OT tasks are Idle.
 
-#define OT_NVM3_REPACK_HEADROOM                   64   // Threshold for User non-forced nvm3 flash repacking.  //TODO- Set repck to run when OT tasks are Idle.
+#define OT_NVM3_SETTINGS_KEY_PREFIX           0xE000  // (nvm3 key range 0x0000 -> 0xDFFF is available for user data)
 
-#define SETTINGS_INDEX_MAX                        255  // Each 'settings key' can have this number of indexed nvm3 keys.
-
-#define OT_NVM3_SETTINGS_KEY_PREFIX               0xE000  // (nvm key range 0x0000 -> 0xDFFF is available for user data)
-
-#define NVM3_KEY_LIST_SIZE                        4  // Size of a list used to enumerate nvm3 keys.
+#define ENUM_NVM3_KEY_LIST_SIZE               4  // List size used when enumerating nvm3 keys.
 
 static nvm3_Handle_t handle = { NULL };
 
@@ -96,11 +97,11 @@ static otError mapNvm3Error(Ecode_t nvm3Res);
 // OT data area should be enough for OT 'Settings' and whatwever User data is required.
 
 OT_NVM3_DEFINE_SECTION_STATIC_DATA(otNvm3,
-                                   SETTINGS_CONFIG_PAGE_NUM * SETTINGS_CONFIG_PAGE_SIZE,  //TODO- Presently still uses 4 x 2K flash pages, increase? 
-                                   OT_NVM3_MAX_NUM_OBJECTS);   //TODO- Is cache size (ram) a problem on OT?
+                                   SETTINGS_CONFIG_PAGE_NUM * SETTINGS_CONFIG_PAGE_SIZE,  // (Presently still uses 8k, = 4 x 2K flash pages)
+                                   OT_NVM3_MAX_NUM_OBJECTS);
 
 OT_NVM3_DEFINE_SECTION_INIT_DATA(otNvm3,
-                                 OT_DEVICE_CONFIG_NVM3_MAX_OBJECT_SIZE,
+                                 OT_NVM3_MAX_OBJECT_SIZE,
                                  OT_NVM3_REPACK_HEADROOM);
 
 
@@ -151,11 +152,11 @@ otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint
     bool idxFound = false;
     int idx = 0;
     err = OT_ERROR_NOT_FOUND;
-    while ((idx <= SETTINGS_INDEX_MAX) && (!idxFound))
+    while ((idx <= NUM_INDEXED_SETTINGS) && (!idxFound))
     {
         // Get the next nvm3 key list.
-        nvm3_ObjectKey_t keys[NVM3_KEY_LIST_SIZE];   // List holds the next set of nvm3 keys.
-        size_t objCnt = nvm3_enumObjects(&handle, keys, NVM3_KEY_LIST_SIZE, nvm3Key, makeNvm3ObjKey(aKey, SETTINGS_INDEX_MAX));
+        nvm3_ObjectKey_t keys[ENUM_NVM3_KEY_LIST_SIZE];   // List holds the next set of nvm3 keys.
+        size_t objCnt = nvm3_enumObjects(&handle, keys, ENUM_NVM3_KEY_LIST_SIZE, nvm3Key, makeNvm3ObjKey(aKey, NUM_INDEXED_SETTINGS));
         for (size_t i = 0; i < objCnt; ++i)
         {
             nvm3Key = keys[i];
@@ -168,26 +169,27 @@ otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint
                 {
                     valueLength = objLen;
 
-                    // Perform read only if an input buffer and buffer length was passed in.
-                    if ((aValue != NULL) && (aValueLength != NULL) && (*aValueLength > 0))
+                    // Only perform read if an input buffer was passed in.
+                    if ((aValue != NULL) && (aValueLength != NULL))
                     {
-                        // Check buffer is large enough for all the nvm3 object data-
-                        // NOTE: nvm3_readData returns an error if the buffer is not long enough for
-                        // ALL of the obj bytes to be read in one go- this differs from the orig
-                        // OT nv implementation which reads nv bytes up to the size of the buffer).
-                        if (*aValueLength >= valueLength)
+                        // Read all nvm3 obj bytes into a tmp buffer, then copy the required
+                        // number of bytes to the read destination buffer.
+                        uint8_t *buf = malloc(valueLength);
+                        err = mapNvm3Error(nvm3_readData(&handle, nvm3Key, buf, valueLength));
+                        if (err == OT_ERROR_NONE)
                         {
-                            err = mapNvm3Error(nvm3_readData(&handle, nvm3Key, aValue, valueLength));
-                            SuccessOrExit(err);
+                            memcpy(aValue, buf, (valueLength < *aValueLength) ? valueLength : *aValueLength);
                         }
-                    }   
+                        free(buf);
+                        SuccessOrExit(err);
+                    }
                 }
                 idxFound = true;
                 break;
             }
             ++idx;
         }
-        if (objCnt < NVM3_KEY_LIST_SIZE)
+        if (objCnt < ENUM_NVM3_KEY_LIST_SIZE)
         {
             // Stop searching (there are no more matching nvm3 objects).
             break;
@@ -256,11 +258,11 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
     bool idxFound = false;
     int idx = 0;
     err = OT_ERROR_NOT_FOUND;
-    while ((idx <= SETTINGS_INDEX_MAX) && (!idxFound))
+    while ((idx <= NUM_INDEXED_SETTINGS) && (!idxFound))
     {
         // Get the next nvm3 key list.
-        nvm3_ObjectKey_t keys[NVM3_KEY_LIST_SIZE];   // List holds the next set of nvm3 keys.
-        size_t objCnt = nvm3_enumObjects(&handle, keys, NVM3_KEY_LIST_SIZE, nvm3Key, makeNvm3ObjKey(aKey, SETTINGS_INDEX_MAX));
+        nvm3_ObjectKey_t keys[ENUM_NVM3_KEY_LIST_SIZE];   // List holds the next set of nvm3 keys.
+        size_t objCnt = nvm3_enumObjects(&handle, keys, ENUM_NVM3_KEY_LIST_SIZE, nvm3Key, makeNvm3ObjKey(aKey, NUM_INDEXED_SETTINGS));
         for (size_t i = 0; i < objCnt; ++i)
         {
             nvm3Key = keys[i];
@@ -283,7 +285,7 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
             }
             ++idx;
         }
-        if (objCnt < NVM3_KEY_LIST_SIZE)
+        if (objCnt < ENUM_NVM3_KEY_LIST_SIZE)
         {
             // Stop searching (there are no more matching nvm3 objects).
             break;
@@ -332,7 +334,7 @@ static otError addSetting(uint16_t aKey, const uint8_t *aValue, uint16_t aValueL
     }
     else
     {
-        for (int idx = 0; idx <= SETTINGS_INDEX_MAX; ++idx)
+        for (int idx = 0; idx <= NUM_INDEXED_SETTINGS; ++idx)
         {
             nvm3_ObjectKey_t nvm3Key;
             nvm3Key = makeNvm3ObjKey(aKey, idx);

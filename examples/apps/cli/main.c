@@ -89,7 +89,7 @@ pseudo_reset:
 
 
 //------------------------------------------------------------------------------
-#define RUN_OT_NVM3_UNIT_TEST 1
+#define RUN_OT_NVM3_UNIT_TEST 0
 #if RUN_OT_NVM3_UNIT_TEST
 
 //OT NVM3 Unit Tests (Tests OT Settings Objects)
