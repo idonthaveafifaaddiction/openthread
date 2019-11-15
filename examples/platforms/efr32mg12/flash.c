@@ -28,23 +28,19 @@
 
 /**
  * @file
- *   This file implements the OpenThread platform abstraction for the non-volatile storage.
+ *   This file implements the OpenThread platform abstraction for the non-volatile
+ *   storage for the EFR32 platform using the Silabs Nvm3 interface.
  */
 
-#include <openthread-core-config.h>
-#include "common/code_utils.hpp"
+#if !OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER
+  #error "OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER must be defined on EFR32 platforms"
+#endif
 
 #include <openthread/config.h>
-#include <openthread/platform/alarm-milli.h>
-
-//------------------------------------------------------------------------------
-#if OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER
-
-// Implement OT third party interface using Silabs NVM3.
-
 #include <openthread/platform/settings.h>
 #include <string.h>
 
+#include "common/code_utils.hpp"
 #include "nvm3.h"
 #include "nvm3_hal_flash.h"
 
@@ -52,7 +48,7 @@
 // initialization data- NVM3_DEFINE_SECTION_STATIC_DATA() and NVM3_DEFINE_SECTION_INIT_DATA().
 // A linker section called 'name'_section is defined by NVM3_DEFINE_SECTION_STATIC_DATA().
 // The NVM3 area is placed at the top of the device FLASH section by the linker script
-// file: e.g. efr32mg12.ld
+// file: e.g. efr32mgxx.ld
 // An error is returned by nvm3_open() on alignment or size violation.
 
 // Local version of SDK macro (avoids uninitialized var compile error).
@@ -74,17 +70,17 @@
     &nvm3_halFlashHandle,                                \
   }
 
-#define NUM_SETTINGS_OBJECTS                  7   // The number of enumerated Settings key types (in settingsd.hpp).
-#define NUM_INDEXED_SETTINGS                  OPENTHREAD_CONFIG_MLE_MAX_CHILDREN   // Indexed key types are only supported for kKeyChildInfo (=='child table').
-#define NUM_USER_OBJECTS                      16  // User nvm3 objects (nvm3 key range 0x0000 -> 0xDFFF is available for user data)
+#define NUM_SETTINGS_OBJECTS              7 // The number of enumerated Settings key types (in settingsd.hpp).
+#define NUM_INDEXED_SETTINGS              OPENTHREAD_CONFIG_MLE_MAX_CHILDREN // Indexed key types are only supported for kKeyChildInfo (=='child table').
+#define NUM_USER_OBJECTS                  16 // User nvm3 objects (nvm3 key range 0x0000 -> 0xDFFF is available for user data).
 
-#define OT_NVM3_MAX_NUM_OBJECTS               NUM_SETTINGS_OBJECTS + NUM_INDEXED_SETTINGS + NUM_USER_OBJECTS
-#define OT_NVM3_MAX_OBJECT_SIZE               256
-#define OT_NVM3_REPACK_HEADROOM               64   // Threshold for User non-forced nvm3 flash repacking.  //TODO- Set repck to run when OT tasks are Idle.
+#define OT_NVM3_MAX_NUM_OBJECTS           NUM_SETTINGS_OBJECTS + NUM_INDEXED_SETTINGS + NUM_USER_OBJECTS
+#define OT_NVM3_MAX_OBJECT_SIZE           256
+#define OT_NVM3_REPACK_HEADROOM           64 // Threshold for automatic nvm3 flash repacking.
 
-#define OT_NVM3_SETTINGS_KEY_PREFIX           0xE000  // (nvm3 key range 0x0000 -> 0xDFFF is available for user data)
+#define OT_NVM3_SETTINGS_KEY_PREFIX       0xE000 // (=> key range 0x0000-0xDFFF is available for OT User nvm3 objects).
 
-#define ENUM_NVM3_KEY_LIST_SIZE               4  // List size used when enumerating nvm3 keys.
+#define ENUM_NVM3_KEY_LIST_SIZE           4 // List size used when enumerating nvm3 keys.
 
 static nvm3_Handle_t handle = { NULL };
 
@@ -97,7 +93,7 @@ static otError mapNvm3Error(Ecode_t nvm3Res);
 // OT data area should be enough for OT 'Settings' and whatwever User data is required.
 
 OT_NVM3_DEFINE_SECTION_STATIC_DATA(otNvm3,
-                                   SETTINGS_CONFIG_PAGE_NUM * SETTINGS_CONFIG_PAGE_SIZE,  // (Presently still uses 8k, = 4 x 2K flash pages)
+                                   SETTINGS_CONFIG_PAGE_NUM * SETTINGS_CONFIG_PAGE_SIZE, // (Presently still uses 8k, = 4 x 2K flash pages)
                                    OT_NVM3_MAX_NUM_OBJECTS);
 
 OT_NVM3_DEFINE_SECTION_INIT_DATA(otNvm3,
@@ -132,10 +128,10 @@ void otPlatSettingsDeinit(otInstance *aInstance)
 
 otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint8_t *aValue, uint16_t *aValueLength)
 {
-    // Searches thru all matching nvm3 keys to find the one with the required 'index', then reads the nvm3 data.
-    // (Enumerate a list of matching keys from the nvm3 and then repeats this until the / required index is found.
-    // Note- we can't enumerate all [256] possible index keys in one go as the stack memory reqd for the list
-    // would be too big (approx 2K).
+    // Searches through all matching nvm3 keys to find the one with the required
+    // 'index', then reads the nvm3 data into the destination buffer.
+    // (Repeatedly enumerates a list of matching keys from the nvm3 until the
+    // required index is found).
 
     OT_UNUSED_VARIABLE(aInstance);
 
@@ -155,7 +151,7 @@ otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint
     while ((idx <= NUM_INDEXED_SETTINGS) && (!idxFound))
     {
         // Get the next nvm3 key list.
-        nvm3_ObjectKey_t keys[ENUM_NVM3_KEY_LIST_SIZE];   // List holds the next set of nvm3 keys.
+        nvm3_ObjectKey_t keys[ENUM_NVM3_KEY_LIST_SIZE]; // List holds the next set of nvm3 keys.
         size_t objCnt = nvm3_enumObjects(&handle, keys, ENUM_NVM3_KEY_LIST_SIZE, nvm3Key, makeNvm3ObjKey(aKey, NUM_INDEXED_SETTINGS));
         for (size_t i = 0; i < objCnt; ++i)
         {
@@ -194,7 +190,7 @@ otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint
             // Stop searching (there are no more matching nvm3 objects).
             break;
         }
-        ++nvm3Key; // Increament starting key value for next nvm3 list enumeration.
+        ++nvm3Key; // Inc starting value for next nvm3 key list enumeration.
     }
 
   exit:
@@ -239,11 +235,10 @@ otError otPlatSettingsAdd(otInstance *aInstance, uint16_t aKey, const uint8_t *a
 
 otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
 {
-    // Searches thru all matching nvm3 keys to find the one with the required 'index' (or index = -1
-    // to delete all), then deletes the nvm3 object.
-    // (Enumerate a list of matching keys from the nvm3 and then repeats this until the / required index is found.
-    // Note- we can't enumerate all [256] possible index keys in one go as the stack memory reqd for the list
-    // would be too big (approx 2K).
+    // Searches through all matching nvm3 keys to find the one with the required
+    // 'index' (or index = -1 to delete all), then deletes the nvm3 object.
+    // (Repeatedly enumerates a list of matching keys from the nvm3 until the
+    // required index is found).
 
     OT_UNUSED_VARIABLE(aInstance);
 
@@ -261,7 +256,7 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
     while ((idx <= NUM_INDEXED_SETTINGS) && (!idxFound))
     {
         // Get the next nvm3 key list.
-        nvm3_ObjectKey_t keys[ENUM_NVM3_KEY_LIST_SIZE];   // List holds the next set of nvm3 keys.
+        nvm3_ObjectKey_t keys[ENUM_NVM3_KEY_LIST_SIZE]; // List holds the next set of nvm3 keys.
         size_t objCnt = nvm3_enumObjects(&handle, keys, ENUM_NVM3_KEY_LIST_SIZE, nvm3Key, makeNvm3ObjKey(aKey, NUM_INDEXED_SETTINGS));
         for (size_t i = 0; i < objCnt; ++i)
         {
@@ -290,7 +285,7 @@ otError otPlatSettingsDelete(otInstance *aInstance, uint16_t aKey, int aIndex)
             // Stop searching (there are no more matching nvm3 objects).
             break;
         }
-        ++nvm3Key; // Increament starting key value for next nvm3 list enumeration.
+        ++nvm3Key; // Inc starting value for next nvm3 key list enumeration.
     }
 
   exit:
@@ -391,118 +386,3 @@ static otError mapNvm3Error(Ecode_t nvm3Res)
 
     return err;
 }
-
-//------------------------------------------------------------------------------
-#else
-
-// Original OT nvm manager uses silabs low-level em_msc flash interface
-// (this code may be removed as a later date as we expected to always support
-// NVM3- see above)
-
-#include "utils/code_utils.h"
-#include "utils/flash.h"
-#include "em_msc.h"
-
-// clang-format off
-#define FLASH_DATA_END_ADDR     (FLASH_BASE + FLASH_SIZE)
-#define FLASH_DATA_START_ADDR   (FLASH_DATA_END_ADDR - (FLASH_PAGE_SIZE * SETTINGS_CONFIG_PAGE_NUM))
-// clang-format on
-
-static inline uint32_t mapAddress(uint32_t aAddress)
-{
-    return aAddress + FLASH_DATA_START_ADDR;
-}
-
-static otError returnTypeConvert(int32_t aStatus)
-{
-    otError error = OT_ERROR_NONE;
-
-    switch (aStatus)
-    {
-    case mscReturnOk:
-        error = OT_ERROR_NONE;
-        break;
-
-    case mscReturnInvalidAddr:
-    case mscReturnUnaligned:
-        error = OT_ERROR_INVALID_ARGS;
-        break;
-
-    default:
-        error = OT_ERROR_FAILED;
-    }
-
-    return error;
-}
-
-otError utilsFlashInit(void)
-{
-    MSC_Init();
-    return OT_ERROR_NONE;
-}
-
-uint32_t utilsFlashGetSize(void)
-{
-    return FLASH_DATA_END_ADDR - FLASH_DATA_START_ADDR;
-}
-
-otError utilsFlashErasePage(uint32_t aAddress)
-{
-    int32_t status;
-
-    status = MSC_ErasePage((uint32_t *)mapAddress(aAddress));
-
-    return returnTypeConvert(status);
-}
-
-otError utilsFlashStatusWait(uint32_t aTimeout)
-{
-    otError  error = OT_ERROR_BUSY;
-    uint32_t start = otPlatAlarmMilliGetNow();
-
-    do
-    {
-        if (MSC->STATUS & MSC_STATUS_WDATAREADY)
-        {
-            error = OT_ERROR_NONE;
-            break;
-        }
-    } while (aTimeout && ((otPlatAlarmMilliGetNow() - start) < aTimeout));
-
-    return error;
-}
-
-uint32_t utilsFlashWrite(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
-{
-    uint32_t rval = aSize;
-    int32_t  status;
-
-    otEXPECT_ACTION(aData, rval = 0);
-    otEXPECT_ACTION(((aAddress + aSize) < utilsFlashGetSize()) && (!(aAddress & 3)) && (!(aSize & 3)), rval = 0);
-
-    status = MSC_WriteWord((uint32_t *)mapAddress(aAddress), aData, aSize);
-    otEXPECT_ACTION(returnTypeConvert(status) == OT_ERROR_NONE, rval = 0);
-
-exit:
-    return rval;
-}
-
-uint32_t utilsFlashRead(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
-{
-    uint32_t rval     = aSize;
-    uint32_t pAddress = mapAddress(aAddress);
-    uint8_t *byte     = aData;
-
-    otEXPECT_ACTION(aData, rval = 0);
-    otEXPECT_ACTION((aAddress + aSize) < utilsFlashGetSize(), rval = 0);
-
-    while (aSize--)
-    {
-        *byte++ = (*(uint8_t *)(pAddress++));
-    }
-
-exit:
-    return rval;
-}
-
-#endif // #if OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER
