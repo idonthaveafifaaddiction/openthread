@@ -1,23 +1,24 @@
 /***************************************************************************//**
- * Linker script for Silicon Labs EFR32MG12P devices
+ * @file
+ * Linker script for Silicon Labs EFR32MG21 devices
  * @version 5.8.1
  *******************************************************************************
  * # License
- * <b>Copyright 2019 Silicon Laboratories Inc. www.silabs.com</b>
+ * <b>Copyright 2019 Silicon Laboratories, Inc. www.silabs.com </b>
  *******************************************************************************
  *
  * SPDX-License-Identifier: Zlib
- *
+ * 
  * The licensor of this software is Silicon Laboratories Inc.
- *
+ * 
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
  * arising from the use of this software.
- *
+ * 
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
  * freely, subject to the following restrictions:
- *
+ * 
  * 1. The origin of this software must not be misrepresented; you must not
  *    claim that you wrote the original software. If you use this software
  *    in a product, an acknowledgment in the product documentation would be
@@ -28,11 +29,10 @@
  *
  ******************************************************************************/
 
-
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 1048576
-  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 262144
+  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 1024K
+  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 96K
 }
 
 /* Linker script to place sections and symbol values. Should be used together
@@ -152,9 +152,9 @@ SECTIONS
   __etext = .;
 
   /*******************************************************************/
-  /* Define 8K (2000H) byte flash block for OT nvm3-                 */
+  /* Define 32K (8000H) byte flash block for OT nvm3-                */
   /* (OT nvm3 must also be configured for 8K in flash.c)             */
-  .otNvm3_block (LENGTH(FLASH) - 0x2000) (NOLOAD):
+  .otNvm3_block (LENGTH(FLASH) - 0x8000) (NOLOAD):
   {     
     . = ALIGN (8192);
     __nvm3WeaveBase = .;
@@ -238,5 +238,5 @@ SECTIONS
   ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")
 
   /* Check if FLASH usage exceeds FLASH size */
-  ASSERT( LENGTH(FLASH) >= (__etext + SIZEOF(.data)), "FLASH memory overflowed !")
+  /*ASSERT( LENGTH(FLASH) >= (__etext + SIZEOF(.data)), "FLASH memory overflowed !")*/
 }

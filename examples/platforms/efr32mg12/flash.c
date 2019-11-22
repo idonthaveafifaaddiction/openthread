@@ -32,9 +32,7 @@
  *   storage for the EFR32 platform using the Silabs Nvm3 interface.
  */
 
-#if !OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER
-  #error "OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER must be defined on EFR32 platforms"
-#endif
+#if OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER
 
 #include <openthread/config.h>
 #include <openthread/platform/settings.h>
@@ -70,10 +68,11 @@
     &nvm3_halFlashHandle,                                \
   }
 
-#define NUM_SETTINGS_OBJECTS              7 // The number of enumerated Settings key types (in settingsd.hpp).
+#define NUM_SETTINGS_OBJECTS              7 // == number of enumerated Settings key types (in settings.hpp).
 #define NUM_INDEXED_SETTINGS              OPENTHREAD_CONFIG_MLE_MAX_CHILDREN // Indexed key types are only supported for kKeyChildInfo (=='child table').
 #define NUM_USER_OBJECTS                  16 // User nvm3 objects (nvm3 key range 0x0000 -> 0xDFFF is available for user data).
 
+#define OT_NVM3_FLASH_SIZE                SETTINGS_CONFIG_PAGE_NUM * SETTINGS_CONFIG_PAGE_SIZE  // == 4 x (MG12/MG1:2K, MG21:8K)
 #define OT_NVM3_MAX_NUM_OBJECTS           NUM_SETTINGS_OBJECTS + NUM_INDEXED_SETTINGS + NUM_USER_OBJECTS
 #define OT_NVM3_MAX_OBJECT_SIZE           256
 #define OT_NVM3_REPACK_HEADROOM           64 // Threshold for automatic nvm3 flash repacking.
@@ -93,7 +92,7 @@ static otError mapNvm3Error(Ecode_t nvm3Res);
 // OT data area should be enough for OT 'Settings' and whatwever User data is required.
 
 OT_NVM3_DEFINE_SECTION_STATIC_DATA(otNvm3,
-                                   SETTINGS_CONFIG_PAGE_NUM * SETTINGS_CONFIG_PAGE_SIZE, // (Presently still uses 8k, = 4 x 2K flash pages)
+                                   OT_NVM3_FLASH_SIZE,
                                    OT_NVM3_MAX_NUM_OBJECTS);
 
 OT_NVM3_DEFINE_SECTION_INIT_DATA(otNvm3,
@@ -386,3 +385,118 @@ static otError mapNvm3Error(Ecode_t nvm3Res)
 
     return err;
 }
+
+//------------------------------------------------------------------------------
+#else
+
+// Original OT nvm manager uses silabs low-level em_msc flash interface
+// TODO- remove this code? (we should normally expected OT to support NVM3)
+
+#include "utils/code_utils.h"
+#include "utils/flash.h"
+#include "em_msc.h"
+
+// clang-format off
+#define FLASH_DATA_END_ADDR     (FLASH_BASE + FLASH_SIZE)
+#define FLASH_DATA_START_ADDR   (FLASH_DATA_END_ADDR - (FLASH_PAGE_SIZE * SETTINGS_CONFIG_PAGE_NUM))
+// clang-format on
+
+static inline uint32_t mapAddress(uint32_t aAddress)
+{
+    return aAddress + FLASH_DATA_START_ADDR;
+}
+
+static otError returnTypeConvert(int32_t aStatus)
+{
+    otError error = OT_ERROR_NONE;
+
+    switch (aStatus)
+    {
+    case mscReturnOk:
+        error = OT_ERROR_NONE;
+        break;
+
+    case mscReturnInvalidAddr:
+    case mscReturnUnaligned:
+        error = OT_ERROR_INVALID_ARGS;
+        break;
+
+    default:
+        error = OT_ERROR_FAILED;
+    }
+
+    return error;
+}
+
+otError utilsFlashInit(void)
+{
+    MSC_Init();
+    return OT_ERROR_NONE;
+}
+
+uint32_t utilsFlashGetSize(void)
+{
+    return FLASH_DATA_END_ADDR - FLASH_DATA_START_ADDR;
+}
+
+otError utilsFlashErasePage(uint32_t aAddress)
+{
+    int32_t status;
+
+    status = MSC_ErasePage((uint32_t *)mapAddress(aAddress));
+
+    return returnTypeConvert(status);
+}
+
+otError utilsFlashStatusWait(uint32_t aTimeout)
+{
+    otError  error = OT_ERROR_BUSY;
+    uint32_t start = otPlatAlarmMilliGetNow();
+
+    do
+    {
+        if (MSC->STATUS & MSC_STATUS_WDATAREADY)
+        {
+            error = OT_ERROR_NONE;
+            break;
+        }
+    } while (aTimeout && ((otPlatAlarmMilliGetNow() - start) < aTimeout));
+
+    return error;
+}
+
+uint32_t utilsFlashWrite(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
+{
+    uint32_t rval = aSize;
+    int32_t  status;
+
+    otEXPECT_ACTION(aData, rval = 0);
+    otEXPECT_ACTION(((aAddress + aSize) < utilsFlashGetSize()) && (!(aAddress & 3)) && (!(aSize & 3)), rval = 0);
+
+    status = MSC_WriteWord((uint32_t *)mapAddress(aAddress), aData, aSize);
+    otEXPECT_ACTION(returnTypeConvert(status) == OT_ERROR_NONE, rval = 0);
+
+exit:
+    return rval;
+}
+
+uint32_t utilsFlashRead(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
+{
+    uint32_t rval     = aSize;
+    uint32_t pAddress = mapAddress(aAddress);
+    uint8_t *byte     = aData;
+
+    otEXPECT_ACTION(aData, rval = 0);
+    otEXPECT_ACTION((aAddress + aSize) < utilsFlashGetSize(), rval = 0);
+
+    while (aSize--)
+    {
+        *byte++ = (*(uint8_t *)(pAddress++));
+    }
+
+exit:
+    return rval;
+}
+
+#endif // #if OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER
+
