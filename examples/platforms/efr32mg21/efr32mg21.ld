@@ -151,18 +151,6 @@ SECTIONS
 
   __etext = .;
 
-  /*******************************************************************/
-  /* Define 32K (8000H) byte flash block for OT nvm3-                */
-  /* (OT nvm3 must also be configured for 8K in flash.c)             */
-  .otNvm3_block (LENGTH(FLASH) - 0x8000) (NOLOAD):
-  {     
-    . = ALIGN (8192);
-    __nvm3WeaveBase = .;
-    KEEP(*(otNvm3_section));
-    __nvm3OtCeiling = .;
-  } > FLASH
-  /*******************************************************************/
-
   .data : AT (__etext)
   {
     __data_start__ = .;
@@ -233,6 +221,18 @@ SECTIONS
   __StackTop = ORIGIN(RAM) + LENGTH(RAM);
   __StackLimit = __StackTop - SIZEOF(.stack_dummy);
   PROVIDE(__stack = __StackTop);
+
+  /*******************************************************************/
+  /* Define 32K (8000H) byte flash block for OT nvm3-                */
+  /* ( == 4 x Flash Pages as configured in flash.c)                  */
+  .otNvm3_block (LENGTH(FLASH) - 0x8000) (NOLOAD):
+  {
+    . = ALIGN (8192);
+    __nvm3OtBase = .;
+    KEEP(*(otNvm3_section));
+    __nvm3OtCeiling = .;
+  } > FLASH
+  /*******************************************************************/
 
   /* Check if data + heap + stack exceeds RAM limit */
   ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")

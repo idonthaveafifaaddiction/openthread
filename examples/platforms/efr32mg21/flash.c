@@ -72,7 +72,7 @@
 #define NUM_INDEXED_SETTINGS              OPENTHREAD_CONFIG_MLE_MAX_CHILDREN // Indexed key types are only supported for kKeyChildInfo (=='child table').
 #define NUM_USER_OBJECTS                  16 // User nvm3 objects (nvm3 key range 0x0000 -> 0xDFFF is available for user data).
 
-#define OT_NVM3_FLASH_SIZE                SETTINGS_CONFIG_PAGE_NUM * SETTINGS_CONFIG_PAGE_SIZE  // == 4 x (MG12/MG1:2K, MG21:8K)
+#define OT_NVM3_FLASH_SIZE                SETTINGS_CONFIG_PAGE_NUM * SETTINGS_CONFIG_PAGE_SIZE  // == 4 x (Flash page size:MG12/MG13=2K, MG21=8K)
 #define OT_NVM3_MAX_NUM_OBJECTS           NUM_SETTINGS_OBJECTS + NUM_INDEXED_SETTINGS + NUM_USER_OBJECTS
 #define OT_NVM3_MAX_OBJECT_SIZE           256
 #define OT_NVM3_REPACK_HEADROOM           64 // Threshold for automatic nvm3 flash repacking.
@@ -136,12 +136,11 @@ otError otPlatSettingsGet(otInstance *aInstance, uint16_t aKey, int aIndex, uint
 
     otError err;
     bool needClose = false;
+    uint16_t valueLength = 0;
 
     err = mapNvm3Error(nvm3_open(&handle, &otNvm3));
     SuccessOrExit(err);
     needClose = true;
-
-    uint16_t valueLength = 0;
 
     nvm3_ObjectKey_t nvm3Key = makeNvm3ObjKey(aKey, 0); // The base nvm3 key value.
     bool idxFound = false;

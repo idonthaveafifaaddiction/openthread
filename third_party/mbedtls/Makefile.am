@@ -81,10 +81,12 @@ libmbedcrypto_a_SOURCES                       = \
     $(NULL)
 
 if !OPENTHREAD_EXAMPLES_EFR32MG12
+if !OPENTHREAD_EXAMPLES_EFR32MG13
 if !OPENTHREAD_EXAMPLES_EFR32MG21
 libmbedcrypto_a_SOURCES                      += \
     repo/library/ecp.c                          \
     $(NULL)
+endif
 endif
 endif
 

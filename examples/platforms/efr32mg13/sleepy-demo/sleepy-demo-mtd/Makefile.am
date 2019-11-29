@@ -36,8 +36,8 @@ EFR32_BOARD_DIR = $(shell echo $(BOARD) | tr A-Z a-z)
 
 SDK_SRC_DIR = $(top_srcdir)/third_party/silabs/gecko_sdk_suite/v2.6
 
-$(top_builddir)/examples/platforms/efr32mg12/libopenthread-efr32mg12.a:
-	(cd $(top_builddir)/examples/platforms/efr32mg12/ && $(MAKE) $(AM_MAKEFLAGS) libopenthread-efr32mg12.a )
+$(top_builddir)/examples/platforms/efr32mg13/libopenthread-efr32mg13.a:
+	(cd $(top_builddir)/examples/platforms/efr32mg13/ && $(MAKE) $(AM_MAKEFLAGS) libopenthread-efr32mg13.a )
 
 bin_PROGRAMS                                                                  = \
     $(NULL)
@@ -68,10 +68,11 @@ CPPFLAGS_COMMON                                                              += 
     -I$(SDK_SRC_DIR)/platform/radio/rail_lib/hal/efr32                          \
     -I$(SDK_SRC_DIR)/platform/radio/rail_lib/plugin/pa-conversions              \
     -I$(SDK_SRC_DIR)/hardware/kit/common/bsp                                    \
-    -I$(SDK_SRC_DIR)/hardware/kit/EFR32MG12_$(BOARD)/config                     \
+    -I$(SDK_SRC_DIR)/hardware/kit/common/drivers                                \
+    -I$(SDK_SRC_DIR)/hardware/kit/EFR32MG13_$(BOARD)/config                     \
     -I$(SDK_SRC_DIR)/platform/CMSIS/Include                                     \
     -I$(SDK_SRC_DIR)/platform/base/                                             \
-    -I$(SDK_SRC_DIR)/platform/Device/SiliconLabs/EFR32MG12P/Include             \
+    -I$(SDK_SRC_DIR)/platform/Device/SiliconLabs/EFR32MG13P/Include             \
     -I$(SDK_SRC_DIR)/platform/emdrv/common/inc                                  \
     -I$(SDK_SRC_DIR)/platform/emdrv/gpiointerrupt/inc                           \
     -I$(SDK_SRC_DIR)/platform/emdrv/uartdrv/inc                                 \

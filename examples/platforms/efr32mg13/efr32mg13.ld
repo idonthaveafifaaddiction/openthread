@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * Linker script for Silicon Labs EFR32MG12P devices
+ * Linker script for Silicon Labs EFR32MG13P devices
  * @version 5.8.1
  *******************************************************************************
  * # License
@@ -30,8 +30,8 @@
 
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 1024K
-  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 256K
+  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 512K
+  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 64K
 }
 
 /* Linker script to place sections and symbol values. Should be used together
@@ -149,7 +149,7 @@ SECTIONS
   */
 
   __etext = .;
-
+  
   .data : AT (__etext)
   {
     __data_start__ = .;
@@ -225,7 +225,7 @@ SECTIONS
   /* Define 8K (2000H) byte flash block for OT nvm3-                 */
   /* ( == 4 x Flash Pages as configured in flash.c)                  */
   .otNvm3_block (LENGTH(FLASH) - 0x2000) (NOLOAD):
-  {
+  {     
     . = ALIGN (8192);
     __nvm3OtBase = .;
     KEEP(*(otNvm3_section));
