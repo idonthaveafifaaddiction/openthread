@@ -29,15 +29,16 @@
 /**
  * @file
  *   This file implements the OpenThread platform abstraction for the non-volatile
- *   storage for the EFR32 platform using the Silabs Nvm3 interface.
+ *   storage for the EFR32 platform using either the Silabs Nvm3 interface or
+ *   the Nest developed nv interface.
  */
-
-#if OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER
 
 #include <openthread/config.h>
 #include <openthread/platform/settings.h>
-#include <string.h>
 
+#if OPENTHREAD_USE_THIRD_PARTY_NVM_MANAGER
+
+#include <string.h>
 #include "common/code_utils.hpp"
 #include "nvm3.h"
 #include "nvm3_hal_flash.h"
@@ -388,16 +389,17 @@ static otError mapNvm3Error(Ecode_t nvm3Res)
 //------------------------------------------------------------------------------
 #else
 
-// Original OT nvm manager uses silabs low-level em_msc flash interface
-// TODO- remove this code? (we should normally expected OT to support NVM3)
+// Use Nest developed OT nvm manager (uses Silabs low-level em_msc
+// flash interface)
 
+#include <openthread/platform/alarm-milli.h>
 #include "utils/code_utils.h"
 #include "utils/flash.h"
 #include "em_msc.h"
 
 // clang-format off
 #define FLASH_DATA_END_ADDR     (FLASH_BASE + FLASH_SIZE)
-#define FLASH_DATA_START_ADDR   (FLASH_DATA_END_ADDR - (FLASH_PAGE_SIZE * SETTINGS_CONFIG_PAGE_NUM))
+#define FLASH_DATA_START_ADDR   (FLASH_DATA_END_ADDR - (FLASH_PAGE_SIZE * 4))
 // clang-format on
 
 static inline uint32_t mapAddress(uint32_t aAddress)
