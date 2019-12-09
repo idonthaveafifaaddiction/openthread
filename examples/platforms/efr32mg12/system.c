@@ -35,20 +35,21 @@
 #include <string.h>
 
 #include "openthread-system.h"
-#include <openthread/tasklet.h>
 #include <openthread/platform/uart.h>
 
 #include "common/logging.hpp"
 
 #include "bsp.h"
 #include "em_chip.h"
+#include "em_cmu.h"
 #include "em_core.h"
 #include "em_emu.h"
 #include "em_system.h"
 #include "hal-config.h"
 #include "hal_common.h"
 #include "rail.h"
-#include "rtcdriver.h"
+#include "sl_mpu.h"
+#include "sl_sleeptimer.h"
 
 #include "openthread-core-efr32-config.h"
 #include "platform-efr32.h"
@@ -70,6 +71,7 @@ void otSysInit(int argc, char *argv[])
 {
     OT_UNUSED_VARIABLE(argc);
     OT_UNUSED_VARIABLE(argv);
+    sl_status_t status;
 
     __disable_irq();
 
@@ -84,7 +86,17 @@ void otSysInit(int argc, char *argv[])
     CHIP_Init();
     halInitChipSpecific();
     BSP_Init(BSP_INIT_BCC);
-    RTCDRV_Init();
+
+    CMU_ClockSelectSet(cmuClock_LFE, cmuSelect_LFRCO);
+    CMU_ClockEnable(cmuClock_CORELE, true);
+    CMU_ClockEnable(cmuClock_RTCC, true);
+
+    status = sl_sleeptimer_init();
+    if (status != SL_STATUS_OK)
+    {
+        otLogWarnPlat("Sleeptimer init error status = %d", status);
+        exit(-1);
+    }
 
 #if (HAL_FEM_ENABLE)
     initFem();
@@ -92,6 +104,8 @@ void otSysInit(int argc, char *argv[])
 #endif
 
     __enable_irq();
+
+    sl_mpu_disable_execute_from_ram();
 
 #if USE_EFR32_LOG
     efr32LogInit();
