@@ -40,7 +40,7 @@ override CXXFLAGS                            := $(filter-out -pedantic-errors,$(
 
 EFR32_BOARD_DIR                               = $(shell echo $(BOARD) | tr A-Z a-z)
 
-EFR32MG_SDK_SRCDIR                            = $(top_srcdir)/third_party/silabs/gecko_sdk_suite/v2.6
+EFR32MG_SDK_SRCDIR                            = $(top_srcdir)/third_party/silabs/sdk
 
 libopenthread_efr32mg21_a_CPPFLAGS                                            = \
     -DEFR32_SERIES2_CONFIG1_MICRO                                               \
