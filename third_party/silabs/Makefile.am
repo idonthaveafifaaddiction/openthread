@@ -84,7 +84,6 @@ COMMONCPPFLAGS                                                                  
     -I$(EFR32MG_SDK_SRCDIR)/platform/emlib/inc                                                  \
     -I$(EFR32MG_SDK_SRCDIR)/platform/halconfig/inc/hal-config                                   \
     -I$(EFR32MG_SDK_SRCDIR)/util/plugin/plugin-common/fem-control                               \
-    -I$(EFR32MG_SDK_SRCDIR)/util/third_party/mbedtls/sl_crypto/include                          \
     -Wno-unused-parameter                                                                       \
     -Wno-missing-field-initializers                                                             \
     $(NULL)
