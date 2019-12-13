@@ -28,7 +28,7 @@
 
 include $(abs_top_nlbuild_autotools_dir)/automake/pre.am
 
-lib_LIBRARIES = libopenthread-efr32mg12.a
+lib_LIBRARIES = libopenthread-efr32mg13.a
 
 # Do not enable -Wconversion for rail
 override CFLAGS   := $(filter-out -Wconversion,$(CFLAGS))
@@ -42,7 +42,7 @@ EFR32_BOARD_DIR = $(shell echo $(BOARD) | tr A-Z a-z)
 
 SDK_SRC_DIR = $(top_srcdir)/third_party/silabs/gecko_sdk_suite/v2.6
 
-libopenthread_efr32mg12_a_CPPFLAGS                                            = \
+libopenthread_efr32mg13_a_CPPFLAGS                                            = \
     -DPLATFORM_HEADER=\"@top_builddir@/third_party/silabs/gecko_sdk_suite/v2.6/platform/base/hal/micro/cortexm3/compiler/gcc.h\" \
     -DNVIC_CONFIG=\"platform/base/hal/micro/cortexm3/efm32/nvic-config.h\"      \
     -Wno-sign-compare                                                           \
@@ -53,7 +53,7 @@ libopenthread_efr32mg12_a_CPPFLAGS                                            = 
     -DPLAT=EMBER_PLATFORM_CORTEXM3                                              \
     -I$(top_srcdir)/include                                                     \
     -I$(top_srcdir)/examples/platforms                                          \
-    -I$(top_srcdir)/examples/platforms/efr32mg12/$(EFR32_BOARD_DIR)             \
+    -I$(top_srcdir)/examples/platforms/efr32mg13/$(EFR32_BOARD_DIR)             \
     -I$(top_srcdir)/src/core                                                    \
     -I$(top_srcdir)/third_party/silabs/rail_config                              \
     -I$(SDK_SRC_DIR)                                                            \
@@ -66,11 +66,11 @@ libopenthread_efr32mg12_a_CPPFLAGS                                            = 
     -I$(SDK_SRC_DIR)/platform/radio/rail_lib/plugin/pa-conversions              \
     -I$(SDK_SRC_DIR)/hardware/kit/common/bsp                                    \
     -I$(SDK_SRC_DIR)/hardware/kit/common/drivers                                \
-    -I$(SDK_SRC_DIR)/hardware/kit/EFR32MG12_$(BOARD)/config                     \
+    -I$(SDK_SRC_DIR)/hardware/kit/EFR32MG13_$(BOARD)/config                     \
     -I$(SDK_SRC_DIR)/platform/base/hal/micro/cortexm3/efm32                     \
     -I$(SDK_SRC_DIR)/platform/base/hal/micro/cortexm3/efm32/config              \
     -I$(SDK_SRC_DIR)/platform/CMSIS/Include                                     \
-    -I$(SDK_SRC_DIR)/platform/Device/SiliconLabs/EFR32MG12P/Include             \
+    -I$(SDK_SRC_DIR)/platform/Device/SiliconLabs/EFR32MG13P/Include             \
     -I$(SDK_SRC_DIR)/platform/emdrv/common/inc                                  \
     -I$(SDK_SRC_DIR)/platform/emdrv/gpiointerrupt/inc                           \
     -I$(SDK_SRC_DIR)/platform/emdrv/uartdrv/inc                                 \
@@ -103,6 +103,8 @@ PLATFORM_SOURCES                                                              = 
     startup-gcc.c                                                               \
     system.c                                                                    \
     uart.c                                                                      \
+    $(SDK_SRC_DIR)/hardware/kit/common/drivers/mx25flash_spi.c                  \
+    $(SDK_SRC_DIR)/hardware/kit/common/drivers/retargetserial.c                 \
     $(NULL)
 
 noinst_HEADERS                                                                = \
@@ -110,7 +112,7 @@ noinst_HEADERS                                                                = 
     platform-band.h                                                             \
     $(NULL)
 
-libopenthread_efr32mg12_a_SOURCES                                             = \
+libopenthread_efr32mg13_a_SOURCES                                             = \
     $(PLATFORM_SOURCES)                                                         \
     $(NULL)
 
@@ -119,7 +121,7 @@ PRETTY_FILES                                                                  = 
     $(NULL)
 
 Dash = -
-libopenthread_efr32mg12_a_LIBADD                                                                     = \
+libopenthread_efr32mg13_a_LIBADD                                                                     = \
     $(shell find $(top_builddir)/examples/platforms/utils $(Dash)type f $(Dash)name "*.o")             \
     $(shell find $(top_builddir)/third_party/jlink/SEGGER_RTT_V640/RTT $(Dash)type f $(Dash)name "*.o")
 
