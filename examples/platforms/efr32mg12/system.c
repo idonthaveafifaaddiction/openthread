@@ -179,3 +179,9 @@ __WEAK void otSysEventSignalPending(void)
 {
     // Intentionally empty
 }
+
+// commit 1
+
+void mytest(void)
+{
+}
