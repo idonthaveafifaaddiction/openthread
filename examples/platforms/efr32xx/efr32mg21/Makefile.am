@@ -106,11 +106,7 @@ PLATFORM_COMMON_SOURCES                                                       = 
 PLATFORM_SOURCES                                                              = \
     efr32mg21/entropy.c                                                         \
     efr32mg21/misc.c                                                            \
-    efr32mg21/openthread-core-efr32-config-check.h                              \
-    efr32mg21/platform-efr32.h                                                  \
-    efr32mg21/platform-band.h                                                   \
     efr32mg21/radio.c                                                           \
-    efr32mg21/rail_config.h                                                     \
     efr32mg21/system.c                                                          \
     efr32mg21/uart.c                                                            \
     $(NULL)
