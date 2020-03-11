@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2020, The OpenThread Authors.
+#  Copyright (c) 2019, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -27,43 +27,45 @@
 #
 
 include $(abs_top_nlbuild_autotools_dir)/automake/pre.am
-include $(top_srcdir)/examples/platforms/Makefile.platform.am
 
-override CFLAGS    := $(filter-out -Wconversion,$(CFLAGS))
-override CXXFLAGS  := $(filter-out -Wconversion,$(CXXFLAGS))
+lib_LIBRARIES = libopenthread-efr32mg21.a
+
+# Do not enable -Wconversion for rail
+override CFLAGS   := $(filter-out -Wconversion,$(CFLAGS))
+override CXXFLAGS := $(filter-out -Wconversion,$(CXXFLAGS))
+
+# Do not enable -pedantic-errors for rail
+override CFLAGS   := $(filter-out -pedantic-errors,$(CFLAGS))
+override CXXFLAGS := $(filter-out -pedantic-errors,$(CXXFLAGS))
+
+# Do not enable -Wundef for rail
+override CFLAGS   := $(filter-out -Wundef,$(CFLAGS))
+override CXXFLAGS := $(filter-out -Wundef,$(CXXFLAGS))
 
 EFR32_BOARD_DIR = $(shell echo $(BOARD) | tr A-Z a-z)
 
 SDK_SRC_DIR = $(top_srcdir)/third_party/silabs/gecko_sdk_suite/v2.7
 
-$(top_builddir)/examples/platforms/efr32mg13/libopenthread-efr32mg13.a:
-	(cd $(top_builddir)/examples/platforms/efr32mg13/ && $(MAKE) $(AM_MAKEFLAGS) libopenthread-efr32mg13.a )
-
-bin_PROGRAMS                                                                  = \
-    $(NULL)
-
-CPPFLAGS_COMMON                                                              += \
-    -DPLATFORM_HEADER=\"platform/base/hal/micro/cortexm3/compiler/gcc.h\"       \
+libopenthread_efr32mg21_a_CPPFLAGS                                            = \
+    -DEFR32_SERIES2_CONFIG1_MICRO                                               \
     -DNVIC_CONFIG=\"platform/base/hal/micro/cortexm3/efm32/nvic-config.h\"      \
+    -DPLATFORM_HEADER=\"platform/base/hal/micro/cortexm3/compiler/gcc.h\"       \
     -Wno-sign-compare                                                           \
-    -DCORTEXM3                                                                  \
-    -DPHY=EMBER_PHY_RAIL                                                        \
-    -DMICRO=EMBER_MICRO_CORTEXM3_EFR32                                          \
-    -DCORTEXM3_EFM32_MICRO                                                      \
-    -DPLAT=EMBER_PLATFORM_CORTEXM3                                              \
     -I$(top_srcdir)/examples/platforms                                          \
-    -I$(top_srcdir)/examples/platforms/efr32mg13/$(EFR32_BOARD_DIR)             \
+    -I$(top_srcdir)/examples/platforms/efr32xx/src                              \
+    -I$(top_srcdir)/examples/platforms/efr32xx/efr32mg21/$(EFR32_BOARD_DIR)     \
     -I$(top_srcdir)/include                                                     \
     -I$(top_srcdir)/src/core                                                    \
     -I$(top_srcdir)/third_party/silabs/rail_config                              \
+    -I$(SDK_SRC_DIR)                                                            \
     -I$(SDK_SRC_DIR)/hardware/kit/common/bsp                                    \
     -I$(SDK_SRC_DIR)/hardware/kit/common/drivers                                \
-    -I$(SDK_SRC_DIR)/hardware/kit/EFR32MG13_$(BOARD)/config                     \
+    -I$(SDK_SRC_DIR)/hardware/kit/EFR32MG21_$(BOARD)/config                     \
     -I$(SDK_SRC_DIR)/platform/base/hal/micro/cortexm3/efm32                     \
     -I$(SDK_SRC_DIR)/platform/base/hal/micro/cortexm3/efm32/config              \
     -I$(SDK_SRC_DIR)/platform/common/inc                                        \
     -I$(SDK_SRC_DIR)/platform/CMSIS/Include                                     \
-    -I$(SDK_SRC_DIR)/platform/Device/SiliconLabs/EFR32MG13P/Include             \
+    -I$(SDK_SRC_DIR)/platform/Device/SiliconLabs/EFR32MG21P/Include             \
     -I$(SDK_SRC_DIR)/platform/emdrv/common/inc                                  \
     -I$(SDK_SRC_DIR)/platform/emdrv/gpiointerrupt/inc                           \
     -I$(SDK_SRC_DIR)/platform/emdrv/uartdrv/inc                                 \
@@ -71,10 +73,12 @@ CPPFLAGS_COMMON                                                              += 
     -I$(SDK_SRC_DIR)/platform/emdrv/ustimer/inc                                 \
     -I$(SDK_SRC_DIR)/platform/emdrv/dmadrv/inc                                  \
     -I$(SDK_SRC_DIR)/platform/emdrv/dmadrv/config                               \
+    -I$(SDK_SRC_DIR)/platform/emdrv/nvm3/inc                                    \
+    -I$(SDK_SRC_DIR)/platform/emdrv/nvm3/config                                 \
     -I$(SDK_SRC_DIR)/platform/emlib/inc                                         \
     -I$(SDK_SRC_DIR)/platform/halconfig/inc/hal-config                          \
     -I$(SDK_SRC_DIR)/platform/radio/rail_lib/chip/efr32                         \
-    -I$(SDK_SRC_DIR)/platform/radio/rail_lib/chip/efr32/efr32xg1x               \
+    -I$(SDK_SRC_DIR)/platform/radio/rail_lib/chip/efr32/efr32xg2x               \
     -I$(SDK_SRC_DIR)/platform/radio/rail_lib/chip/efr32/rf/common/cortex        \
     -I$(SDK_SRC_DIR)/platform/radio/rail_lib/common                             \
     -I$(SDK_SRC_DIR)/platform/radio/rail_lib/hal                                \
@@ -90,65 +94,49 @@ CPPFLAGS_COMMON                                                              += 
     -Wno-missing-field-initializers                                             \
     $(NULL)
 
-LDADD_COMMON                                                                 += \
+PLATFORM_COMMON_SOURCES                                                       = \
+    src/alarm.c                                                                 \
+    src/diag.c                                                                  \
+    src/fem-control.c                                                           \
+    src/flash.c                                                                 \
+    src/logging.c                                                               \
+    src/startup-gcc.c                                                           \
     $(NULL)
 
-LDFLAGS_COMMON                                                               += \
+PLATFORM_SOURCES                                                              = \
+    efr32mg21/entropy.c                                                         \
+    efr32mg21/misc.c                                                            \
+    efr32mg21/openthread-core-efr32-config-check.h                              \
+    efr32mg21/platform-efr32.h                                                  \
+    efr32mg21/platform-band.h                                                   \
+    efr32mg21/radio.c                                                           \
+    efr32mg21/rail_config.h                                                     \
+    efr32mg21/system.c                                                          \
+    efr32mg21/uart.c                                                            \
     $(NULL)
 
-LIBTOOLFLAGS_COMMON                                                          += \
+noinst_HEADERS                                                                = \
+    efr32mg21/platform-efr32.h                                                  \
+    efr32mg21/platform-band.h                                                   \
     $(NULL)
 
-SOURCES_COMMON                                                               += \
-    main.c                                                                      \
+libopenthread_efr32mg21_a_SOURCES                                             = \
+    $(PLATFORM_COMMON_SOURCES)                                                  \
+    $(PLATFORM_SOURCES)                                                         \
     $(NULL)
 
-if OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
-LDADD_COMMON                                                                 += \
-    $(top_builddir)/third_party/mbedtls/libmbedcrypto.a                         \
-    $(NULL)
-endif # OPENTHREAD_ENABLE_BUILTIN_MBEDTLS
+Dash = -
+libopenthread_efr32mg21_a_LIBADD                                                                     = \
+    $(shell find $(top_builddir)/examples/platforms/utils $(Dash)type f $(Dash)name "*.o")             \
+    $(shell find $(top_builddir)/third_party/jlink/SEGGER_RTT_V640/RTT $(Dash)type f $(Dash)name "*.o")
 
-if OPENTHREAD_ENABLE_EXECUTABLE
-bin_PROGRAMS                                                                 += \
-    sleepy-demo-ftd                                                             \
+DIST_SUBDIRS                                                                  = \
     $(NULL)
-endif
-
-sleepy_demo_ftd_CPPFLAGS                                                      = \
-    $(CPPFLAGS_COMMON)                                                          \
+    
+SUBDIRS                                                                       = \
     $(NULL)
 
-sleepy_demo_ftd_LDADD                                                         = \
-    $(top_builddir)/src/cli/libopenthread-cli-ftd.a                             \
-    $(top_builddir)/src/core/libopenthread-ftd.a                                \
-    $(LDADD_COMMON)                                                             \
-    $(top_builddir)/src/core/libopenthread-ftd.a                                \
-    $(LDADD_COMMON)                                                             \
+PRETTY_SUBDIRS                                                                = \
     $(NULL)
-
-sleepy_demo_ftd_LDFLAGS                                                       = \
-    $(LDFLAGS_COMMON)                                                           \
-    $(NULL)
-
-sleepy_demo_ftd_LIBTOOLFLAGS                                                  = \
-    $(LIBTOOLFLAGS_COMMON)                                                      \
-    $(NULL)
-
-sleepy_demo_ftd_SOURCES                                                       = \
-    $(SOURCES_COMMON)                                                           \
-    $(NULL)
-
-if OPENTHREAD_ENABLE_LINKER_MAP
-sleepy_demo_ftd_LDFLAGS  += -Wl,-Map=sleepy-demo-ftd.map
-endif
-
-if OPENTHREAD_BUILD_COVERAGE
-CPPFLAGS_COMMON                                                              += \
-    -DOPENTHREAD_ENABLE_COVERAGE                                                \
-    $(NULL)
-
-CLEANFILES = $(wildcard *.gcda *.gcno)
-endif # OPENTHREAD_BUILD_COVERAGE
-
+    
 include $(abs_top_nlbuild_autotools_dir)/automake/post.am

@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2020, The OpenThread Authors.
+#  Copyright (c) 2019, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -26,24 +26,26 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-#
-# efr32mg13 platform-specific Makefile
-#
+# Use automake includes since we cannot use SUBDIRS feature due to  cleanup
+# errors - few targets may use the same source file but dependency file is 
+# created only once which leads to errors when auto-generated Makefile tries
+# to remove .Po files that were already removed
 
-LIBRAIL = $(shell                                                                \
-if [ "$(DMP)" = "1" ]; then                                                      \
-    echo "librail_multiprotocol_efr32xg13_gcc_release.a";                        \
-else                                                                             \
-    echo "librail_efr32xg13_gcc_release.a";                                      \
-fi )
+if OPENTHREAD_EXAMPLES_EFR32MG12
+include efr32mg12/Makefile.am
+endif
 
-LDADD_COMMON                                                                  += \
-    $(top_builddir)/examples/platforms/efr32mg13/libopenthread-efr32mg13.a       \
-    $(top_builddir)/third_party/silabs/libsilabs-efr32mg13-sdk.a                 \
-    $(top_srcdir)/third_party/silabs/gecko_sdk_suite/v2.7/platform/radio/rail_lib/autogen/librail_release/$(LIBRAIL) \
-    $(top_srcdir)/third_party/silabs/gecko_sdk_suite/v2.7/platform/emdrv/nvm3/lib/libnvm3_CM4_gcc.a \
+if OPENTHREAD_EXAMPLES_EFR32MG13
+include efr32mg13/Makefile.am
+endif
+
+if OPENTHREAD_EXAMPLES_EFR32MG21
+include efr32mg21/Makefile.am
+endif
+
+include $(abs_top_nlbuild_autotools_dir)/automake/pre.am
+
+PRETTY_FILES                            = \
     $(NULL)
 
-LDFLAGS_COMMON                                                                += \
-    -T $(top_srcdir)/examples/platforms/efr32mg13/efr32mg13.ld                   \
-    $(NULL)
+include $(abs_top_nlbuild_autotools_dir)/automake/post.am

@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2020, The OpenThread Authors.
+#  Copyright (c) 2017, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -26,29 +26,24 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-include $(abs_top_nlbuild_autotools_dir)/automake/pre.am
+#
+# efr32mg12 platform-specific Makefile
+#
 
-# Always package (e.g. for 'make dist') these subdirectories.
+LIBRAIL = $(shell                                                                \
+if [ "$(DMP)" = "1" ]; then                                                      \
+    echo "librail_multiprotocol_efr32xg12_gcc_release.a";                        \
+else                                                                             \
+    echo "librail_efr32xg12_gcc_release.a";                                      \
+fi )
 
-DIST_SUBDIRS                            = \
-    sleepy-demo-mtd                       \
-    sleepy-demo-ftd                       \
+LDADD_COMMON                                                                                                      += \
+    $(top_builddir)/examples/platforms/efr32xx/libopenthread-efr32mg12.a                                             \
+    $(top_builddir)/third_party/silabs/libsilabs-efr32mg12-sdk.a                                                     \
+    $(top_srcdir)/third_party/silabs/gecko_sdk_suite/v2.7/platform/radio/rail_lib/autogen/librail_release/$(LIBRAIL) \
+    $(top_srcdir)/third_party/silabs/gecko_sdk_suite/v2.7/platform/emdrv/nvm3/lib/libnvm3_CM4_gcc.a \
     $(NULL)
 
-# Always build (e.g. for 'make all') these subdirectories.
-
-SUBDIRS                                 = \
+LDFLAGS_COMMON                                                                += \
+    -T $(top_srcdir)/examples/platforms/efr32xx/efr32mg12/efr32mg12.ld           \
     $(NULL)
-
-if OPENTHREAD_ENABLE_EXECUTABLE
-SUBDIRS                                += sleepy-demo-mtd sleepy-demo-ftd
-endif
-
-# Always pretty (e.g. for 'make pretty') these subdirectories.
-
-PRETTY_SUBDIRS                          = \
-    sleepy-demo-mtd                       \
-    sleepy-demo-ftd                       \
-    $(NULL)
-
-include $(abs_top_nlbuild_autotools_dir)/automake/post.am

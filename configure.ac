@@ -865,6 +865,9 @@ AC_MSG_CHECKING([whether to enable examples])
 AC_MSG_RESULT(${with_examples})
 
 AM_CONDITIONAL([OPENTHREAD_EXAMPLES_NRF528XX], [test OPENTHREAD_EXAMPLES_NRF52811 || test OPENTHREAD_EXAMPLES_NRF52833 || test OPENTHREAD_EXAMPLES_NRF52840])
+
+AM_CONDITIONAL([OPENTHREAD_EXAMPLES_EFR32XX], [test OPENTHREAD_EXAMPLES_EFR32MG12 || test OPENTHREAD_EXAMPLES_EFR32MG13 || test OPENTHREAD_EXAMPLES_EFR32MG21])
+
 #
 # Tools
 #
@@ -992,18 +995,7 @@ examples/platforms/cc1352/Makefile
 examples/platforms/cc2538/Makefile
 examples/platforms/cc2650/Makefile
 examples/platforms/cc2652/Makefile
-examples/platforms/efr32mg12/Makefile
-examples/platforms/efr32mg12/sleepy-demo/Makefile
-examples/platforms/efr32mg12/sleepy-demo/sleepy-demo-ftd/Makefile
-examples/platforms/efr32mg12/sleepy-demo/sleepy-demo-mtd/Makefile
-examples/platforms/efr32mg13/Makefile
-examples/platforms/efr32mg13/sleepy-demo/Makefile
-examples/platforms/efr32mg13/sleepy-demo/sleepy-demo-ftd/Makefile
-examples/platforms/efr32mg13/sleepy-demo/sleepy-demo-mtd/Makefile
-examples/platforms/efr32mg21/Makefile
-examples/platforms/efr32mg21/sleepy-demo/Makefile
-examples/platforms/efr32mg21/sleepy-demo/sleepy-demo-ftd/Makefile
-examples/platforms/efr32mg21/sleepy-demo/sleepy-demo-mtd/Makefile
+examples/platforms/efr32xx/Makefile
 examples/platforms/gp712/Makefile
 examples/platforms/kw41z/Makefile
 examples/platforms/nrf528xx/Makefile

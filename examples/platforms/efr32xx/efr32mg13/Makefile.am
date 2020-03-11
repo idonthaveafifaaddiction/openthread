@@ -56,7 +56,8 @@ libopenthread_efr32mg13_a_CPPFLAGS                                            = 
     -DCORTEXM3_EFM32_MICRO                                                      \
     -DPLAT=EMBER_PLATFORM_CORTEXM3                                              \
     -I$(top_srcdir)/examples/platforms                                          \
-    -I$(top_srcdir)/examples/platforms/efr32mg13/$(EFR32_BOARD_DIR)             \
+    -I$(top_srcdir)/examples/platforms/efr32xx/src                              \
+    -I$(top_srcdir)/examples/platforms/efr32xx/efr32mg13/$(EFR32_BOARD_DIR)     \
     -I$(top_srcdir)/include                                                     \
     -I$(top_srcdir)/src/core                                                    \
     -I$(top_srcdir)/third_party/silabs/rail_config                              \
@@ -97,35 +98,34 @@ libopenthread_efr32mg13_a_CPPFLAGS                                            = 
     -Wno-missing-field-initializers                                             \
     $(NULL)
 
+PLATFORM_COMMON_SOURCES                                                       = \
+    src/alarm.c                                                                 \
+    src/diag.c                                                                  \
+    src/fem-control.c                                                           \
+    src/flash.c                                                                 \
+    src/logging.c                                                               \
+    src/startup-gcc.c                                                           \
+    $(NULL)
+
 PLATFORM_SOURCES                                                              = \
-    alarm.c                                                                     \
-    diag.c                                                                      \
-    entropy.c                                                                   \
-    fem-control.c                                                               \
-    flash.c                                                                     \
-    logging.c                                                                   \
-    misc.c                                                                      \
-    openthread-core-efr32-config.h                                              \
-    openthread-core-efr32-config-check.h                                        \
-    platform-efr32.h                                                            \
-    platform-band.h                                                             \
-    radio.c                                                                     \
-    rail_config.h                                                               \
-    startup-gcc.c                                                               \
-    system.c                                                                    \
-    uart.c                                                                      \
+    efr32mg13/entropy.c                                                         \
+    efr32mg13/misc.c                                                            \
+    efr32mg13/openthread-core-efr32-config-check.h                              \
+    efr32mg13/platform-efr32.h                                                  \
+    efr32mg13/platform-band.h                                                   \
+    efr32mg13/radio.c                                                           \
+    efr32mg13/rail_config.h                                                     \
+    efr32mg13/system.c                                                          \
+    efr32mg13/uart.c                                                            \
     $(NULL)
 
 noinst_HEADERS                                                                = \
-    platform-efr32.h                                                            \
-    platform-band.h                                                             \
+    efr32mg13/platform-efr32.h                                                  \
+    efr32mg13/platform-band.h                                                   \
     $(NULL)
 
 libopenthread_efr32mg13_a_SOURCES                                             = \
-    $(PLATFORM_SOURCES)                                                         \
-    $(NULL)
-
-PRETTY_FILES                                                                  = \
+    $(PLATFORM_COMMON_SOURCES)                                                  \
     $(PLATFORM_SOURCES)                                                         \
     $(NULL)
 
@@ -135,15 +135,12 @@ libopenthread_efr32mg13_a_LIBADD                                                
     $(shell find $(top_builddir)/third_party/jlink/SEGGER_RTT_V640/RTT $(Dash)type f $(Dash)name "*.o")
 
 DIST_SUBDIRS                                                                  = \
-    sleepy-demo                                                                 \
     $(NULL)
     
 SUBDIRS                                                                       = \
-    sleepy-demo                                                                 \
     $(NULL)
 
 PRETTY_SUBDIRS                                                                = \
-    sleepy-demo                                                                 \
     $(NULL)
     
 include $(abs_top_nlbuild_autotools_dir)/automake/post.am
