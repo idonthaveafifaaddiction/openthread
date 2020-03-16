@@ -56,7 +56,6 @@ libopenthread_efr32mg12_a_CPPFLAGS                                            = 
     -DCORTEXM3_EFM32_MICRO                                                      \
     -DPLAT=EMBER_PLATFORM_CORTEXM3                                              \
     -I$(top_srcdir)/examples/platforms                                          \
-    -I$(top_srcdir)/examples/platforms/efr32xx/src                              \
     -I$(top_srcdir)/examples/platforms/efr32xx/efr32mg12/$(EFR32_BOARD_DIR)     \
     -I$(top_srcdir)/include                                                     \
     -I$(top_srcdir)/src/core                                                    \
