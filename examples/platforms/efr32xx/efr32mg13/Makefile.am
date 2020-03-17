@@ -57,6 +57,7 @@ libopenthread_efr32mg13_a_CPPFLAGS                                            = 
     -DPLAT=EMBER_PLATFORM_CORTEXM3                                              \
     -I$(top_srcdir)/examples/platforms                                          \
     -I$(top_srcdir)/examples/platforms/efr32xx/efr32mg13/$(EFR32_BOARD_DIR)     \
+    -I$(top_srcdir)/examples/platforms/efr32xx/src                              \
     -I$(top_srcdir)/include                                                     \
     -I$(top_srcdir)/src/core                                                    \
     -I$(top_srcdir)/third_party/silabs/rail_config                              \
