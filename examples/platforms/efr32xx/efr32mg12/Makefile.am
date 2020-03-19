@@ -104,20 +104,20 @@ PLATFORM_COMMON_SOURCES                                                       = 
     src/fem-control.c                                                           \
     src/flash.c                                                                 \
     src/logging.c                                                               \
+    src/misc.c                                                                  \
+    src/radio.c                                                                 \
     src/startup-gcc.c                                                           \
     $(NULL)
 
 PLATFORM_SOURCES                                                              = \
     efr32mg12/entropy.c                                                         \
-    efr32mg12/misc.c                                                            \
-    efr32mg12/radio.c                                                           \
     efr32mg12/system.c                                                          \
     efr32mg12/uart.c                                                            \
     $(NULL)
 
 noinst_HEADERS                                                                = \
     efr32mg12/platform-efr32.h                                                  \
-    efr32mg12/platform-band.h                                                   \
+    src/platform-band.h                                                         \
     $(NULL)
 
 libopenthread_efr32mg12_a_SOURCES                                             = \

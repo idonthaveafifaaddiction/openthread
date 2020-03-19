@@ -57,44 +57,26 @@
 #include "rail_config.h"
 #include "rail_ieee802154.h"
 
-enum
-{
-    IEEE802154_MIN_LENGTH = 5,
-    IEEE802154_MAX_LENGTH = 127,
-    IEEE802154_ACK_LENGTH = 5,
+#define IEEE802154_MIN_LENGTH   5
+#define IEEE802154_MAX_LENGTH   127
+#define IEEE802154_ACK_LENGTH   5
 
-    // FCF + DSN + dest PANID + dest addr + src PANID + src addr (without security header)
-    IEEE802154_MAX_MHR_LENGTH = 2 + 1 + 2 + 8 + 2 + 8,
+// FCF + DSN + dest PANID + dest addr + src PANID + src addr (without security header)
+#define IEEE802154_MAX_MHR_LENGTH           2 + 1 + 2 + 8 + 2 + 8
 
-    IEEE802154_FRAME_TYPE_MASK        = 0x7,
-    IEEE802154_FRAME_TYPE_ACK         = 0x2,
-    IEEE802154_FRAME_TYPE_MAC_COMMAND = 0x3,
-    IEEE802154_ACK_REQUEST            = 1 << 5,
-    IEEE802154_DSN_OFFSET             = 2,
-    IEEE802154_FCF_OFFSET             = 0,
-};
+#define IEEE802154_FRAME_TYPE_MASK          0x07
+#define IEEE802154_FRAME_TYPE_ACK           0x02
+#define IEEE802154_FRAME_TYPE_MAC_COMMAND   0x03
+#define IEEE802154_ACK_REQUEST              0x10
+#define IEEE802154_DSN_OFFSET               2
+#define IEEE802154_FCF_OFFSET               0
 
-enum
-{
-    EFR32_RECEIVE_SENSITIVITY    = -100, // dBm
-    EFR32_RSSI_AVERAGING_TIMEOUT = 300,  // us
-};
+#define EFR32_RECEIVE_SENSITIVITY           -100 // dBm
+#define EFR32_RSSI_AVERAGING_TIMEOUT        300  // us
 
-enum
-{
-    EFR32_SCHEDULER_SAMPLE_RSSI_PRIORITY = 10, // High priority
-    EFR32_SCHEDULER_TX_PRIORITY          = 10, // High priority
-    EFR32_SCHEDULER_RX_PRIORITY          = 20, // Low priority
-};
-
-enum
-{
-#if RADIO_CONFIG_2P4GHZ_OQPSK_SUPPORT && RADIO_CONFIG_915MHZ_OQPSK_SUPPORT
-    EFR32_NUM_BAND_CONFIGS = 2,
-#else
-    EFR32_NUM_BAND_CONFIGS = 1,
-#endif
-};
+#define EFR32_SCHEDULER_SAMPLE_RSSI_PRIORITY    10 // High priority
+#define EFR32_SCHEDULER_TX_PRIORITY             10 // High priority
+#define EFR32_SCHEDULER_RX_PRIORITY             20 // Low priority
 
 typedef enum
 {
@@ -140,7 +122,7 @@ static uint8_t          sTransmitPsdu[IEEE802154_MAX_LENGTH];
 static volatile otError sTransmitError;
 
 static efr32CommonConfig sCommonConfig;
-static efr32BandConfig   sBandConfigs[EFR32_NUM_BAND_CONFIGS];
+static efr32BandConfig   sBandConfig;
 
 #if RADIO_CONFIG_DEBUG_COUNTERS_SUPPORT
 static efr32RadioCounters sRailDebugCounters;
@@ -158,29 +140,29 @@ static void RAILCb_Generic(RAIL_Handle_t aRailHandle, RAIL_Events_t aEvents);
 static const RAIL_IEEE802154_Config_t sRailIeee802154Config = {
     .addresses = NULL,
     .ackConfig =
-        {
-            .enable     = true,
-            .ackTimeout = 864,
-            .rxTransitions =
-                {
-                    .success = RAIL_RF_STATE_RX,
-                    .error   = RAIL_RF_STATE_RX,
-                },
+    {        
+        .enable     = true,
+        .ackTimeout = 894,
+        .rxTransitions =
+        {            
+            .success = RAIL_RF_STATE_RX,
+            .error   = RAIL_RF_STATE_RX,
+        },
             .txTransitions =
-                {
-                    .success = RAIL_RF_STATE_RX,
-                    .error   = RAIL_RF_STATE_RX,
-                },
-        },
-    .timings =
         {
-            .idleToRx            = 100,
-            .txToRx              = 192 - 10,
-            .idleToTx            = 100,
-            .rxToTx              = 192,
-            .rxSearchTimeout     = 0,
-            .txToRxSearchTimeout = 0,
+            .success = RAIL_RF_STATE_RX,
+			.error   = RAIL_RF_STATE_RX,
         },
+    },
+    .timings =
+    {        
+        .idleToRx            = 100,
+        .txToRx              = 192 - 10,
+        .idleToTx            = 100,
+        .rxToTx              = 192,
+        .rxSearchTimeout     = 0,
+        .txToRxSearchTimeout = 0,
+    },
     .framesMask       = RAIL_IEEE802154_ACCEPT_STANDARD_FRAMES,
     .promiscuousMode  = false,
     .isPanCoordinator = false,
@@ -189,7 +171,7 @@ static const RAIL_IEEE802154_Config_t sRailIeee802154Config = {
 #if RADIO_CONFIG_PA_USES_DCDC
 RAIL_DECLARE_TX_POWER_DCDC_CURVES(piecewiseSegments, curvesSg, curves24Hp, curves24Lp);
 #else
-RAIL_DECLARE_TX_POWER_VBAT_CURVES(piecewiseSegments, curvesSg, curves24Hp, curves24Lp);
+RAIL_DECLARE_TX_POWER_VBAT_CURVES_ALT;
 #endif
 
 static int8_t sTxPowerDbm = OPENTHREAD_CONFIG_DEFAULT_TRANSMIT_POWER;
@@ -236,33 +218,50 @@ static RAIL_Handle_t efr32RailInit(efr32CommonConfig *aCommonConfig)
 static void efr32RailConfigLoad(efr32BandConfig *aBandConfig)
 {
     RAIL_Status_t status;
-#if HAL_PA_2P4_LOWPOWER == 1
-    RAIL_TxPowerConfig_t txPowerConfig = {RAIL_TX_POWER_MODE_2P4_LP, HAL_PA_VOLTAGE, 10};
-#else
-    RAIL_TxPowerConfig_t txPowerConfig = {RAIL_TX_POWER_MODE_2P4_HP, HAL_PA_VOLTAGE, 10};
-#endif
+
+    #if HAL_PA_VOLTAGE
+        RAIL_TxPowerConfig_t txPowerConfig = {RAIL_TX_POWER_MODE_2P4_HP, HAL_PA_VOLTAGE, 10};
+    #else
+        RAIL_TxPowerConfig_t txPowerConfig = {RAIL_TX_POWER_MODE_2P4_HP, BSP_PA_VOLTAGE, 10};
+    #endif
+
     if (aBandConfig->mChannelConfig != NULL)
     {
         uint16_t firstChannel = RAIL_ConfigChannels(gRailHandle, aBandConfig->mChannelConfig, NULL);
         assert(firstChannel == aBandConfig->mChannelMin);
 
-        txPowerConfig.mode = RAIL_TX_POWER_MODE_SUBGIG;
+        #if defined(_SILICON_LABS_32B_SERIES_1)        
+            txPowerConfig.mode = RAIL_TX_POWER_MODE_SUBGIG;
+        #endif        
+        #if defined(_SILICON_LABS_32B_SERIES_2)
+            #if RAIL_FEAT_SUBGIG_RADIO
+                txPowerConfig.mode = RAIL_TX_POWER_MODE_SUBGIG;
+            #else
+                txPowerConfig.mode = RAIL_TX_POWER_MODE_NONE;
+            #endif
+        #endif
     }
     else
     {
         status = RAIL_IEEE802154_Config2p4GHzRadio(gRailHandle);
         assert(status == RAIL_STATUS_NO_ERROR);
     }
+
     status = RAIL_ConfigTxPower(gRailHandle, &txPowerConfig);
     assert(status == RAIL_STATUS_NO_ERROR);
 }
 
 static void efr32RadioSetTxPower(int8_t aPowerDbm)
 {
-    RAIL_Status_t              status;
-    RAIL_TxPowerCurvesConfig_t txPowerCurvesConfig = {curves24Hp, curvesSg, curves24Lp, piecewiseSegments};
+    RAIL_Status_t status;
 
+#if RADIO_CONFIG_PA_USES_DCDC
+    const RAIL_TxPowerCurvesConfig_t   txPowerCurvesConfig = {curves24Hp, curvesSg, curves24Lp, piecewiseSegments};
     status = RAIL_InitTxPowerCurves(&txPowerCurvesConfig);
+#else
+    const RAIL_TxPowerCurvesConfigAlt_t txPowerCurvesConfig = RAIL_DECLARE_TX_POWER_CURVES_CONFIG_ALT;
+    status = RAIL_InitTxPowerCurvesAlt(&txPowerCurvesConfig);
+#endif
     assert(status == RAIL_STATUS_NO_ERROR);
 
     status = RAIL_SetTxPowerDbm(gRailHandle, ((RAIL_TxPower_t)aPowerDbm) * 10);
@@ -273,13 +272,9 @@ static efr32BandConfig *efr32RadioGetBandConfig(uint8_t aChannel)
 {
     efr32BandConfig *config = NULL;
 
-    for (uint8_t i = 0; i < EFR32_NUM_BAND_CONFIGS; i++)
+    if ((sBandConfig.mChannelMin <= aChannel) && (aChannel <= sBandConfig.mChannelMax))
     {
-        if ((sBandConfigs[i].mChannelMin <= aChannel) && (aChannel <= sBandConfigs[i].mChannelMax))
-        {
-            config = &sBandConfigs[i];
-            break;
-        }
+        config = &sBandConfig;
     }
 
     return config;
@@ -295,20 +290,17 @@ static void efr32ConfigInit(void (*aEventCallback)(RAIL_Handle_t railHandle, RAI
     sCommonConfig.mRailConfig.scheduler = NULL; // only needed for DMP
 #endif
 
-    uint8_t index = 0;
-
 #if RADIO_CONFIG_2P4GHZ_OQPSK_SUPPORT
-    sBandConfigs[index].mChannelConfig = NULL;
-    sBandConfigs[index].mChannelMin    = OT_RADIO_2P4GHZ_OQPSK_CHANNEL_MIN;
-    sBandConfigs[index].mChannelMax    = OT_RADIO_2P4GHZ_OQPSK_CHANNEL_MAX;
+    sBandConfig.mChannelConfig = NULL;
+    sBandConfig.mChannelMin    = OT_RADIO_2P4GHZ_OQPSK_CHANNEL_MIN;
+    sBandConfig.mChannelMax    = OT_RADIO_2P4GHZ_OQPSK_CHANNEL_MAX;
 
-    index++;
 #endif
 
 #if RADIO_CONFIG_915MHZ_OQPSK_SUPPORT
-    sBandConfigs[index].mChannelConfig = channelConfigs[0];
-    sBandConfigs[index].mChannelMin    = OT_RADIO_915MHZ_OQPSK_CHANNEL_MIN;
-    sBandConfigs[index].mChannelMax    = OT_RADIO_915MHZ_OQPSK_CHANNEL_MAX;
+    sBandConfig.mChannelConfig = channelConfigs[0]; // TO DO: channel config??
+    sBandConfig.mChannelMin    = OT_RADIO_915MHZ_OQPSK_CHANNEL_MIN;
+    sBandConfig.mChannelMax    = OT_RADIO_915MHZ_OQPSK_CHANNEL_MAX;
 #endif
 
 #if RADIO_CONFIG_DEBUG_COUNTERS_SUPPORT
@@ -317,7 +309,7 @@ static void efr32ConfigInit(void (*aEventCallback)(RAIL_Handle_t railHandle, RAI
 
     gRailHandle = efr32RailInit(&sCommonConfig);
     assert(gRailHandle != NULL);
-    efr32RailConfigLoad(&(sBandConfigs[0]));
+    efr32RailConfigLoad(&(sBandConfig));
 }
 
 void efr32RadioInit(void)
@@ -331,8 +323,6 @@ void efr32RadioInit(void)
     assert((RAIL_TX_FIFO_SIZE >= 64) || (RAIL_TX_FIFO_SIZE <= 4096));
 
     efr32ConfigInit(RAILCb_Generic);
-
-    CMU_ClockEnable(cmuClock_PRS, true);
 
     status = RAIL_ConfigSleep(gRailHandle, RAIL_SLEEP_CONFIG_TIMERSYNC_ENABLED);
     assert(status == RAIL_STATUS_NO_ERROR);
@@ -497,7 +487,7 @@ otError otPlatRadioSleep(otInstance *aInstance)
 
     otLogInfoPlat("State=OT_RADIO_STATE_SLEEP", NULL);
 
-    RAIL_Idle(gRailHandle, RAIL_IDLE_ABORT, true); // abort packages under reception
+    RAIL_Idle(gRailHandle, RAIL_IDLE, true); // abort packages under reception
     sState = OT_RADIO_STATE_SLEEP;
 
 exit:

@@ -93,27 +93,27 @@ libopenthread_efr32mg21_a_CPPFLAGS                                            = 
     -Wno-unused-parameter                                                       \
     -Wno-missing-field-initializers                                             \
     $(NULL)
-
+  
 PLATFORM_COMMON_SOURCES                                                       = \
     src/alarm.c                                                                 \
     src/diag.c                                                                  \
     src/fem-control.c                                                           \
     src/flash.c                                                                 \
     src/logging.c                                                               \
+    src/misc.c                                                                  \
+    src/radio.c                                                                 \
     src/startup-gcc.c                                                           \
     $(NULL)
 
 PLATFORM_SOURCES                                                              = \
     efr32mg21/entropy.c                                                         \
-    efr32mg21/misc.c                                                            \
-    efr32mg21/radio.c                                                           \
     efr32mg21/system.c                                                          \
     efr32mg21/uart.c                                                            \
     $(NULL)
 
 noinst_HEADERS                                                                = \
     efr32mg21/platform-efr32.h                                                  \
-    efr32mg21/platform-band.h                                                   \
+    src/platform-band.h                                                         \
     $(NULL)
 
 libopenthread_efr32mg21_a_SOURCES                                             = \
