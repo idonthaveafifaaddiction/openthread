@@ -34,8 +34,10 @@
 
 #include <assert.h>
 
-#include "openthread-system.h"
+#include "openthread-core-efr32-config.h"
 #include <openthread/config.h>
+
+#include "openthread-system.h"
 #include <openthread/platform/alarm-milli.h>
 #include <openthread/platform/diag.h>
 #include <openthread/platform/radio.h>
@@ -50,7 +52,6 @@
 #include "em_core.h"
 #include "em_system.h"
 #include "hal-config.h"
-#include "openthread-core-efr32-config.h"
 #include "pa_conversions_efr32.h"
 #include "platform-band.h"
 #include "rail.h"

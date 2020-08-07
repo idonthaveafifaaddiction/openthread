@@ -38,15 +38,6 @@
 #ifndef OPENTHREAD_CORE_EFR32_CONFIG_H_
 #define OPENTHREAD_CORE_EFR32_CONFIG_H_
 
-/**
- * @def OPENTHREAD_CONFIG_LOG_OUTPUT
- *
- * The efr32 platform provides an otPlatLog() function.
- */
-#ifndef OPENTHREAD_CONFIG_LOG_OUTPUT /* allow command line override */
-#define OPENTHREAD_CONFIG_LOG_OUTPUT OPENTHREAD_CONFIG_LOG_OUTPUT_PLATFORM_DEFINED
-#endif
-
 /*
  * @def OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
  *
