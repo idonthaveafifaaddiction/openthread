@@ -44,6 +44,15 @@
 #include "uartdrv.h"
 
 #include "hal-config.h"
+#include "sl_uartdrv_usart_vcom_config.h"
+
+#define HELPER1(x) USART ## x ## _RX_IRQn
+#define HELPER2(x) HELPER1(x)
+#define USART_IRQ  HELPER2(SL_UARTDRV_USART_VCOM_PERIPHERAL_NO)
+
+#define HELPER3(x)  USART ## x ## _RX_IRQHandler
+#define HELPER4(x)  HELPER3(x)
+#define USART_IRQHandler HELPER4(SL_UARTDRV_USART_VCOM_PERIPHERAL_NO)
 
 enum
 {
@@ -189,9 +198,9 @@ static void processTransmit(void)
     }
 }
 
-void USART0_RX_IRQHandler(void)
+void USART_IRQHandler(void)
 {
-    otSysEventSignalPending();  
+    otSysEventSignalPending();
 }
 
 otError otPlatUartEnable(void)
@@ -208,9 +217,9 @@ otError otPlatUartEnable(void)
     UARTDRV_Receive(sUartHandle, sReceiveBuffer2, RECEIVE_BUFFER_SIZE, receiveDone);
 
     // Enable USART0 interrupt to wake OT task when data arrives
-    NVIC_ClearPendingIRQ(USART0_RX_IRQn);
-    NVIC_EnableIRQ(USART0_RX_IRQn);
-    USART_IntEnable(USART0, USART_IF_RXDATAV);
+    NVIC_ClearPendingIRQ(USART_IRQ);
+    NVIC_EnableIRQ(USART_IRQ);
+    USART_IntEnable(SL_UARTDRV_USART_VCOM_PERIPHERAL, USART_IF_RXDATAV);
 
     return OT_ERROR_NONE;
 }
